@@ -39,7 +39,7 @@ from pydantic import BaseModel
 REMOTE_OLLAMA_URL = os.getenv(
     "REMOTE_OLLAMA_URL", "http://100.103.237.60:11434/api/generate"
 )
-REMOTE_OLLAMA_MODEL = os.getenv("REMOTE_OLLAMA_MODEL", "llama3.2:latest")
+REMOTE_OLLAMA_MODEL = os.getenv("REMOTE_OLLAMA_MODEL", "gemma3:12b")
 
 # Local Ollama URL for summarization/embedding helpers
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")

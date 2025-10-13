@@ -22,7 +22,7 @@ except ImportError:
 from langchain_community.vectorstores import Qdrant
 
 CONTROLLER_URL = "http://localhost:8000/v1"
-MODEL_NAME = "granite-embedding"
+MODEL_NAME = "embeddinggemma"
 
 DOCS = [
     Document(page_content="Quantum computers exploit superposition and entanglement."),

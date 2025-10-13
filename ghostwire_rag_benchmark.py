@@ -10,7 +10,7 @@ import httpx
 CONTROLLER_URL = "http://localhost:8000"
 EMBED_ROUTE = "/v1/embeddings"
 CHAT_ROUTE = "/chat_embedding"
-EMBED_MODEL = "granite-embedding"
+EMBED_MODEL = "embeddinggemma"
 TOP_K = 2
 
 DOCUMENTS = [

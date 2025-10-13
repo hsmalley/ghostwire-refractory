@@ -158,7 +158,7 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
 
 async def ollama_embed(text: str) -> list[float]:
     """Use local Ollama for embedding text."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{OLLAMA_URL}/api/embeddings",
             json={"model": "nomic-embed-text", "prompt": text},
@@ -170,7 +170,7 @@ async def ollama_embed(text: str) -> list[float]:
 async def ollama_summarize(text: str) -> str:
     """Use local Ollama for summarization."""
     prompt = f"Summarize this text concisely, keeping key details:\n\n{text}"
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
             f"{OLLAMA_URL}/api/generate", json={"model": "mistral", "prompt": prompt}
         )
@@ -500,7 +500,7 @@ async def generate_embedding(text_input: str, model: str = "nomic-embed-text"):
         raise TypeError(f"generate_embedding expected str, got {type(text_input)}")
 
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             payload = {"model": model, "input": text_input}
             resp = await client.post(
                 "http://localhost:11434/api/embeddings", json=payload

@@ -57,7 +57,7 @@ class SimpleVectorStore:
 
 
 async def fetch_embedding(text: str):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         payload = {"model": EMBED_MODEL, "input": text}
         resp = await client.post(f"{CONTROLLER_URL}{EMBED_ROUTE}", json=payload)
         resp.raise_for_status()
@@ -75,7 +75,7 @@ async def chat_answer(question: str, contexts: List[str]):
         prompt += f"Context: {c}\n"
     prompt += f"\nQuestion: {question}\nAnswer:"
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         payload = {"session_id": "rag-test", "prompt_text": str(prompt)}
 
         # Add optional embedding data if required by the API schema
@@ -112,6 +112,9 @@ async def run_rag_test():
         print("Retrieved contexts:", contexts)
         print("Answer:", answer)
         print("-" * 60)
+
+    print("✅ RAG benchmark complete.")
+    return True
 
 
 if __name__ == "__main__":

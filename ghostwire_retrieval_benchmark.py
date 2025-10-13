@@ -8,6 +8,7 @@ Validates:
   2. Cosine similarity consistency of embeddings
 """
 
+import asyncio
 import json
 import time
 
@@ -53,7 +54,7 @@ def cosine_similarity(a, b):
 
 async def fetch_embedding(text: str):
     """Query the controller directly for an embedding vector."""
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         payload = {"model": MODEL_NAME, "input": text}
         start = time.perf_counter()
         resp = await client.post(f"{CONTROLLER_URL}/embeddings", json=payload)
@@ -63,7 +64,7 @@ async def fetch_embedding(text: str):
         return np.array(embedding), latency
 
 
-def run_retrieval_test(rounds: int = 5):
+async def run_retrieval_test(rounds: int = 5):
     print(
         f"🔍 Running retrieval & embedding stability test via Ghostwire controller at {CONTROLLER_URL}"
     )
@@ -112,7 +113,7 @@ def run_retrieval_test(rounds: int = 5):
     ]:
         runs = []
         for _ in range(rounds):
-            vec, _ = asyncio.run(fetch_embedding(text))
+            vec, _ = await fetch_embedding(text)
             runs.append(vec)
         sims = [
             cosine_similarity(runs[i], runs[j])
@@ -126,9 +127,10 @@ def run_retrieval_test(rounds: int = 5):
 
     print("=" * 80)
     print("✅ Retrieval and embedding stability test complete.")
+    return True
 
 
 if __name__ == "__main__":
     import asyncio
 
-    run_retrieval_test(rounds=5)
+    asyncio.run(run_retrieval_test(rounds=5))

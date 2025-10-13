@@ -27,7 +27,7 @@ CONTROLLER_ROUTES = []
 # Embedding helpers
 # =========================
 async def embed_text(model: str, text: str):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         start = time.perf_counter()
         resp = await client.post(
             f"{OLLAMA_URL}/api/embeddings", json={"model": model, "prompt": text}
@@ -45,7 +45,7 @@ async def embed_text(model: str, text: str):
 async def detect_controller_routes():
     global CONTROLLER_ROUTES
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             resp = await client.get(f"{CONTROLLER_URL}/openapi.json")
             resp.raise_for_status()
             openapi_data = resp.json()
@@ -63,7 +63,7 @@ async def detect_controller_routes():
 # Controller benchmark
 # =========================
 async def controller_embed(text: str):
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=30.0) as client:
         payload = {
             "model": "granite-embedding",  # adjust if your controller uses a different embedding model
             "input": text,
@@ -119,6 +119,7 @@ async def run_controller_benchmark():
     print("-" * 60)
     for label, latency, dim, mem_diff in results:
         print(f"{label:<10}{latency:<12.3f}{dim:<10}{mem_diff:<10.3f}")
+    return results
 
 
 # =========================
@@ -150,6 +151,7 @@ async def run_benchmark():
     print("-" * 60)
     for model, label, latency, dim, mem_diff in results:
         print(f"{model:<20}{label:<10}{latency:<12.3f}{dim:<10}{mem_diff:<10.3f}")
+    return results
 
 
 # =========================

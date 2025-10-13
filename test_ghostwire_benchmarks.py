@@ -1,5 +1,6 @@
-import pytest
 import asyncio
+
+import pytest
 
 # Import benchmark routines
 # Make sure these functions exist or adjust to match your actual entrypoints.

@@ -1,8 +1,8 @@
 /.DS_Store
-/.gitmodules
-/.python-version
+/ghostwire-refractory.code-workspace
+/__pycache__
+/__pycache__/**
 /.ruff_cache
 /.venv
-/ghostwire-refractory.code-workspace
-/main.py
 /uv.lock
+/*.db

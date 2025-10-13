@@ -8,7 +8,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    timezone: "America/Los_Angeles"
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -28,7 +27,6 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:30"
-    timezone: "America/Los_Angeles"
     labels:
       - "dependencies"
     commit-message:

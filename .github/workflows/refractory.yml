@@ -37,6 +37,11 @@ jobs:
           ls -l dist
           sha256sum dist/* > dist/SHA256SUMS.txt
 
+      - name: Create Git tag
+        run: |
+          git tag v${{ github.run_number }}
+          git push origin v${{ github.run_number }}
+
       - name: 📦 Bind Artifacts to Release
         uses: softprops/action-gh-release@v2
         with:

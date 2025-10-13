@@ -1,0 +1,19 @@
+[project]
+name = "ghostwire-refractory"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "apsw>=3.50.4.0",
+    "asyncio>=4.0.0",
+    "fastapi>=0.119.0",
+    "hnswlib>=0.8.0",
+    "httpx[http2]>=0.28.1",
+    "numpy>=2.3.3",
+    "ollama>=0.6.0",
+    "sentence-transformers>=5.1.1",
+    "typing>=3.10.0.0",
+    "uvicorn>=0.37.0",
+    "vectorlite-py>=0.2.0",
+]

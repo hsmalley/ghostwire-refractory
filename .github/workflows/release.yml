@@ -1,0 +1,57 @@
+name: ⚡ GhostWire Release (uv)
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🔮 Summon Source
+        uses: actions/checkout@v4
+
+      - name: 🧪 Prime Python Vessel
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 🔥 Ignite uv Forge
+        uses: astral-sh/setup-uv@v3
+
+      - name: 🛠️ Cast Artifacts (sdist + wheel)
+        run: |
+          uv build --sdist --wheel --out-dir dist
+
+      - name: 🧿 Scry Package Metadata
+        run: |
+          uvx twine check dist/*
+
+      - name: ✒️ Seal with Sigils (SHA256)
+        run: |
+          ls -l dist
+          sha256sum dist/* > dist/SHA256SUMS.txt
+
+      - name: 📦 Bind Artifacts to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*
+          generate_release_notes: true
+          # A touch of GhostWire in the notes
+          body: |
+            ## 👁️ GhostWire Transmission
+            Artifacts forged with **uv** and sealed with SHA256 sigils.
+            
+            - Model: ${{ env.REMOTE_OLLAMA_MODEL || 'N/A' }}
+            - Python: 3.12
+            - Builder: uv
+            
+            “Between the pulse and the packet lies revelation.”
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

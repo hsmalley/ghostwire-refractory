@@ -1,5 +1,23 @@
 from __future__ import annotations
 
+"""
+👁️ GhostWire Controller
+-----------------------
+The daemon priest. Uvicorn-fed, SQLite‑souled, speaking HTTP to the void.
+
+Purpose
+- Accept an incoming prompt + embedding from the client.
+- Recall relevant prior whispers (memories) via HNSW or cosine fallback.
+- Stream generation from a remote Ollama host, token by token.
+- Etch the conversation back into the archive.
+
+Notes
+- Vectors are normalized and stored as BLOBs; HNSW keeps hot neighbors in RAM.
+- Streaming uses Ollama's JSONL /api/generate protocol; only `response` chunks
+  are yielded to callers. When `done` appears, the ritual ends.
+- Environment variables shape the conduit (REMOTE_OLLAMA_URL, MODEL, EMBED_DIM, DB_PATH).
+"""
+
 import atexit
 import json
 import os
@@ -23,7 +41,15 @@ REMOTE_OLLAMA_MODEL = os.getenv("REMOTE_OLLAMA_MODEL", "llama3.2:latest")
 
 
 async def stream_from_ollama(prompt: str) -> AsyncGenerator[str, None]:
-    """Stream text tokens from remote Ollama server (JSONL protocol)."""
+    """
+    Open the channel to Ollama and stream `response` fragments as they arrive.
+
+    Input
+    - prompt: The fully composed prompt including any recalled memory context.
+
+    Yields
+    - Text fragments in arrival order; callers should concatenate.
+    """
     try:
         async with httpx.AsyncClient(timeout=None, http2=True) as client:
             async with client.stream(
@@ -100,6 +126,7 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
 
 
 def get_connection() -> sqlite3.Connection:
+    """Return a shared SQLite connection, creating tables on first touch."""
     global _global_conn
     if _global_conn is not None:
         # print("[DB] Using global SQLite connection")
@@ -112,7 +139,11 @@ def get_connection() -> sqlite3.Connection:
 
 
 def _ensure_hnsw_initialized(conn: sqlite3.Connection) -> None:
-    """Initialize HNSW and backfill from DB once."""
+    """
+    Initialize the in‑memory HNSW index and backfill any stored vectors once.
+
+    Keeps RAM hot for fast recall; gracefully skips rows with mismatched dims.
+    """
     global _hnsw_index, _hnsw_initialized
     if _hnsw_initialized:
         return
@@ -156,6 +187,12 @@ def _normalize(v: np.ndarray) -> np.ndarray:
 def upsert_memory_with_embedding(
     session_id: str, prompt_text: str, answer_text: str, embedding: List[float]
 ) -> None:
+    """
+    Etch a conversation turn into the archive.
+
+    Stores: session id, user prompt, assistant answer, timestamp, and normalized
+    embedding. Adds the vector to HNSW for fast future recall.
+    """
     conn = get_connection()
     _ensure_hnsw_initialized(conn)
 
@@ -191,6 +228,12 @@ def upsert_memory_with_embedding(
 def query_similar_by_embedding(
     session_id: str, embedding: List[float], limit: int = 5
 ) -> List[Tuple[str, str]]:
+    """
+    Retrieve prior whispers most aligned with the incoming embedding.
+
+    Returns ordered `(prompt_text, answer_text)` pairs, preferring HNSW when
+    available, else falling back to cosine over session rows.
+    """
     conn = get_connection()
     _ensure_hnsw_initialized(conn)
 
@@ -276,7 +319,12 @@ async def ask_streaming_with_embedding(
     session_id: str, text: str, embedding: List[float]
 ) -> AsyncGenerator[str, None]:
     """
-    Streaming generator using remote Ollama server, with memory context.
+    Orchestrate recall + generation.
+
+    - Pull relevant context from memory.
+    - Compose a prompt that honors those echoes.
+    - Stream tokens from Ollama while accumulating the final answer.
+    - Persist the turn once the stream concludes.
     """
     # Retrieve memories
     memories = query_similar_by_embedding(session_id, embedding, limit=5)
@@ -303,6 +351,7 @@ async def ask_streaming_with_embedding(
 
 @app.post("/chat_embedding")
 async def chat_embedding(req: ChatEmbeddingRequest):
+    """HTTP entrypoint: chat via embedding. Streams plain text back to caller."""
     try:
         session_id, text, embedding = req.normalized()
 

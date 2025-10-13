@@ -1,0 +1,35 @@
+version: 2
+updates:
+  # Python dependencies (pip/pyproject). Dependabot will look for
+  # requirements files and pyproject metadata in the repo root.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    timezone: "America/Los_Angeles"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"
+    rebase-strategy: auto
+    groups:
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Keep GitHub Actions up to date.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:30"
+    timezone: "America/Los_Angeles"
+    labels:
+      - "dependencies"
+    commit-message:
+      prefix: "chore(deps)"

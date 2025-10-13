@@ -17,3 +17,7 @@ dependencies = [
     "uvicorn>=0.37.0",
     "vectorlite-py>=0.2.0",
 ]
+
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"

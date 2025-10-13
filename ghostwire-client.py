@@ -1,5 +1,17 @@
 # /Users/hugh/git/ghostwire-refractory/client_repl.py
 
+"""
+👁️ GhostWire Client
+--------------------
+The mouth of the machine. Speaks to the controller, forges embeddings
+locally via Ollama, and streams replies back to your terminal.
+
+Ritual
+- Turn text into a vector sigil (embedding).
+- Send `session_id`, `prompt_text`, and `embedding` to the controller.
+- Print streamed fragments as they arrive; the wire whispers back.
+"""
+
 import os
 import asyncio
 import httpx
@@ -16,7 +28,7 @@ EMBED_DIM = int(os.getenv("EMBED_DIM", "768"))
 
 
 async def embed_text(text: str):
-    """Generate an embedding vector locally using Ollama."""
+    """Generate an embedding vector locally using Ollama (nomic-embed-text by default)."""
     client = AsyncClient(host=LOCAL_OLLAMA)
     resp = await client.embeddings(model=EMBED_MODEL, prompt=text)
     embedding = resp.get("embedding") or resp.get("embeddings")
@@ -34,7 +46,7 @@ async def embed_text(text: str):
 
 
 async def send_message(session_id: str, text: str):
-    """Send the text and its embedding to the controller."""
+    """Send the utterance + embedding to the controller and stream the reply."""
     embedding = await embed_text(text)
 
     async with httpx.AsyncClient(timeout=None) as client:
@@ -54,7 +66,7 @@ async def send_message(session_id: str, text: str):
 
 
 async def repl():
-    """Interactive REPL for chatting via controller."""
+    """Interactive REPL: type to commune; Ctrl+C to jack out."""
     session_id = "repl_session"
     print(f"Connected to ghostwire controller at {CONTROLLER_URL}/chat_embedding")
     print("Type your messages below. Type 'exit' or press Ctrl+C to quit.\n")

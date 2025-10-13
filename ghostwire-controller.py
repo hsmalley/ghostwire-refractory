@@ -22,6 +22,7 @@ import atexit
 import json
 import logging
 import os
+import re
 import sqlite3
 import time
 from typing import Any, AsyncGenerator, List, Optional, Tuple
@@ -30,14 +31,18 @@ import hnswlib
 import httpx
 import numpy as np
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
+#
 # Config via environment (with safe defaults)
 REMOTE_OLLAMA_URL = os.getenv(
     "REMOTE_OLLAMA_URL", "http://100.103.237.60:11434/api/generate"
 )
 REMOTE_OLLAMA_MODEL = os.getenv("REMOTE_OLLAMA_MODEL", "llama3.2:latest")
+
+# Local Ollama URL for summarization/embedding helpers
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 
 async def stream_from_ollama(prompt: str) -> AsyncGenerator[str, None]:
@@ -125,6 +130,16 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
         );
         """
     )
+    # Add summary_text column if not present
+    try:
+        conn.execute("ALTER TABLE memory_text ADD COLUMN summary_text TEXT;")
+    except Exception as e:
+        # Ignore duplicate column error
+        if (
+            "duplicate column" not in str(e).lower()
+            and "already exists" not in str(e).lower()
+        ):
+            raise
     # Table to track dropped collections
     conn.execute(
         """
@@ -134,6 +149,42 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
         """
     )
     conn.commit()
+
+
+# -------------------------------
+# Helper functions: Ollama embed/summarize and code detection
+# -------------------------------
+
+
+async def ollama_embed(text: str) -> list[float]:
+    """Use local Ollama for embedding text."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{OLLAMA_URL}/api/embeddings",
+            json={"model": "nomic-embed-text", "prompt": text},
+        )
+        data = resp.json()
+        return data.get("embedding", [])
+
+
+async def ollama_summarize(text: str) -> str:
+    """Use local Ollama for summarization."""
+    prompt = f"Summarize this text concisely, keeping key details:\n\n{text}"
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{OLLAMA_URL}/api/generate", json={"model": "mistral", "prompt": prompt}
+        )
+        output = ""
+        async for chunk in resp.aiter_text():
+            output += chunk
+        return output.strip()
+
+
+def contains_code(text: str) -> bool:
+    """Detect code-like content (skip summarization if present)."""
+    if re.search(r"```|def |class |;|{|\}|<[^>]+>", text):
+        return True
+    return False
 
 
 def get_connection() -> sqlite3.Connection:
@@ -170,7 +221,9 @@ def _ensure_hnsw_initialized(conn: sqlite3.Connection) -> None:
             print(f"[HNSW] Loaded persistent vector index from {hnsw_path}.")
             return
         except Exception as e:
-            print(f"[HNSW] WARNING: Failed to load persistent index ({e}). Falling back to DB backfill.")
+            print(
+                f"[HNSW] WARNING: Failed to load persistent index ({e}). Falling back to DB backfill."
+            )
 
     # Init index
     _hnsw_index = hnswlib.Index(space="cosine", dim=EMBED_DIM)
@@ -432,38 +485,132 @@ async def chat_embedding(req: ChatEmbeddingRequest):
 
 
 # -------------------------------
-# OpenAI-compatible endpoints
+# OpenAI-compatible /v1/embeddings endpoint (controller-native)
 # -------------------------------
 
 
+async def generate_embedding(text_input: str, model: str = "nomic-embed-text"):
+    """
+    Generate embedding for a single text string using Ollama backend.
+    Always returns a single vector (list[float]).
+    """
+    import httpx
+
+    if not isinstance(text_input, str):
+        raise TypeError(f"generate_embedding expected str, got {type(text_input)}")
+
+    try:
+        async with httpx.AsyncClient() as client:
+            payload = {"model": model, "input": text_input}
+            resp = await client.post(
+                "http://localhost:11434/api/embeddings", json=payload
+            )
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Accept either "embedding" or "data[0]['embedding']"
+            embedding = data.get("embedding") or data.get("data", [{}])[0].get(
+                "embedding"
+            )
+            if not embedding:
+                print(f"[WARN] No embedding returned for model={model}")
+                return []
+
+            return embedding
+    except Exception as e:
+        print(f"[ERROR] generate_embedding failed: {e}")
+        return []
+
+
+from fastapi.responses import JSONResponse
+
+
 @app.post("/v1/embeddings")
-async def create_embedding(req: EmbeddingRequest):
-    """OpenAI-compatible embeddings endpoint."""
-    text_input = req.input if isinstance(req.input, str) else " ".join(req.input)
-    model_name = req.model or "mxbai-embed-large"
+async def v1_embeddings(req: dict):
+    """
+    OpenAI-compatible embedding endpoint.
+    Accepts: {"model": "granite-embedding", "input": "text"} or {"input": ["t1", "t2", ...]}.
+    Ensures generate_embedding() is always called with a single string.
+    """
+    try:
+        model = req.get("model", "nomic-embed-text")
+        inputs = req.get("input", "")
 
-    async with httpx.AsyncClient(timeout=None) as client:
-        r = await client.post(
-            "http://127.0.0.1:11434/api/embeddings",
-            json={"model": model_name, "input": text_input},
+        if not inputs:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "error": {
+                        "message": "Missing input text",
+                        "type": "invalid_request",
+                    }
+                },
+            )
+
+        # Normalize to list of strings
+        if isinstance(inputs, str):
+            inputs = [inputs]
+        elif isinstance(inputs, list):
+            # Flatten nested lists if LangChain sends [[text]]
+            flat_inputs = []
+            for item in inputs:
+                if isinstance(item, list):
+                    flat_inputs.extend(str(x) for x in item)
+                else:
+                    flat_inputs.append(str(item))
+            inputs = flat_inputs
+        else:
+            raise TypeError(f"Invalid input type: {type(inputs)}")
+
+        data = []
+        total_tokens = 0
+
+        for i, text_input in enumerate(inputs):
+            if not isinstance(text_input, str):
+                text_input = str(text_input)
+
+            embedding_vector = await generate_embedding(text_input, model=model)
+            if not embedding_vector:
+                embedding_vector = [1e-8] * 768  # tiny nonzero fallback
+
+            # Sanitize non-finite values (NaN or inf)
+            import math
+
+            embedding_vector = [
+                float(x) if isinstance(x, (float, int)) and math.isfinite(x) else 1e-8
+                for x in embedding_vector
+            ]
+
+            # Prevent all-zero vectors that cause normalization NaN downstream
+            if sum(abs(x) for x in embedding_vector) < 1e-12:
+                embedding_vector = [1e-8] * len(embedding_vector)
+
+            total_tokens += len(text_input.split())
+            data.append(
+                {"object": "embedding", "embedding": embedding_vector, "index": i}
+            )
+
+        response = {
+            "object": "list",
+            "data": data,
+            "model": model,
+            "usage": {"prompt_tokens": total_tokens, "total_tokens": total_tokens},
+        }
+
+        print(f"[EMBED] Successfully generated {len(inputs)} embeddings via {model}")
+        return JSONResponse(content=response)
+
+    except Exception as e:
+        print(f"[ERROR] /v1/embeddings failed: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": {"message": str(e), "type": "internal_error"}},
         )
-        r.raise_for_status()
-        data = r.json()
 
-    embedding = data.get("embedding") or data.get("data", [{}])[0].get("embedding")
 
-    return {
-        "object": "list",
-        "data": [
-            {
-                "object": "embedding",
-                "embedding": embedding,
-                "index": 0,
-            }
-        ],
-        "model": model_name,
-        "usage": {"prompt_tokens": 0, "total_tokens": 0},
-    }
+# -------------------------------
+# OpenAI-compatible endpoints
+# -------------------------------
 
 
 @app.post("/v1/vectors/upsert")
@@ -530,7 +677,6 @@ class QIndexRequest(BaseModel):
     field_schema: str
 
 
-
 @app.put("/collections/{collection_name}")
 async def q_create_collection(collection_name: str, params: QCollectionParams):
     """Create a Qdrant-like collection (maps to a GhostWire namespace)."""
@@ -547,6 +693,7 @@ async def q_create_collection(collection_name: str, params: QCollectionParams):
         "result": {"name": collection_name, "vectors": params.vectors},
     }
 
+
 # --- Qdrant-compatible collection info endpoint ---
 @app.get("/collections/{collection_name}")
 async def q_get_collection_info(collection_name: str):
@@ -558,8 +705,7 @@ async def q_get_collection_info(collection_name: str):
     if dropped:
         raise HTTPException(status_code=404, detail="collection not found")
     cur = conn.execute(
-        "SELECT COUNT(*) FROM memory_text WHERE session_id = ?",
-        (collection_name,)
+        "SELECT COUNT(*) FROM memory_text WHERE session_id = ?", (collection_name,)
     )
     count = cur.fetchone()[0]
 
@@ -568,14 +714,11 @@ async def q_get_collection_info(collection_name: str):
         "result": {
             "name": collection_name,
             "vectors_count": count,
-            "config": {
-                "params": {
-                    "vectors": {"size": 1536, "distance": "Cosine"}
-                }
-            }
+            "config": {"params": {"vectors": {"size": 1536, "distance": "Cosine"}}},
         },
-        "time": 0.0001
+        "time": 0.0001,
     }
+
 
 # --- Qdrant-compatible collection delete endpoint ---
 @app.delete("/collections/{collection_name}")
@@ -590,25 +733,53 @@ async def q_delete_collection(collection_name: str):
     )
     conn.commit()
     logging.info(f"[DELETE COLLECTION] Dropped collection {collection_name}")
-    return {
-        "status": "ok",
-        "result": True
-    }
+    return {"status": "ok", "result": True}
 
 
 @app.post("/collections/{collection_name}/points")
 async def q_upsert_points(collection_name: str, pts: list[QPointStruct]):
     """Upsert points into a collection (Qdrant-style)."""
     results = []
-    for p in pts:
+    for qp in pts:
         try:
+            # Summarization/embedding logic
+            text = (qp.payload or {}).get("text", "")
+            use_summary = (qp.payload or {}).get("summarize", False)
+            # Auto summarization if long and not code
+            if not use_summary and len(text) > 2000 and not contains_code(text):
+                use_summary = True
+
+            summary_text = None
+            if use_summary and text:
+                try:
+                    summary_text = await ollama_summarize(text)
+                    emb = await ollama_embed(summary_text)
+                    logging.info(
+                        f"[SUMMARIZE] Text summarized before embedding for {collection_name}"
+                    )
+                except Exception as e:
+                    logging.warning(
+                        f"[SUMMARIZE] Summarization failed, falling back to full text: {e}"
+                    )
+                    emb = await ollama_embed(text)
+            else:
+                emb = await ollama_embed(text)
+
             upsert_memory_with_embedding(
                 session_id=collection_name,
                 prompt_text="",
-                answer_text=json.dumps(p.payload or {}),
-                embedding=p.vector,
+                answer_text=json.dumps(qp.payload or {}),
+                embedding=emb,
             )
-            results.append({"id": p.id})
+            # Store summary_text if it exists
+            if summary_text:
+                conn = get_connection()
+                conn.execute(
+                    "UPDATE memory_text SET summary_text = ? WHERE session_id = ? ORDER BY id DESC LIMIT 1",
+                    (summary_text, collection_name),
+                )
+                conn.commit()
+            results.append({"id": qp.id})
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
     return {"status": "ok", "result": results}
@@ -650,8 +821,6 @@ async def q_get_point(collection_name: str, point_id: str):
     return {"id": point_id, "vector": vec, "payload": payload}
 
 
-
-
 # ----------------------------------------
 # Qdrant/KiloCode Compatibility Extensions
 # ----------------------------------------
@@ -659,7 +828,9 @@ async def q_get_point(collection_name: str, point_id: str):
 
 # Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}
 @app.post("/collections/{collection_name}/points/delete")
-async def qdrant_delete_points(collection_name: str, request: Request, wait: Optional[bool] = False):
+async def qdrant_delete_points(
+    collection_name: str, request: Request, wait: Optional[bool] = False
+):
     """Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}"""
     try:
         body = await request.json()
@@ -674,13 +845,14 @@ async def qdrant_delete_points(collection_name: str, request: Request, wait: Opt
     if not must:
         # Delete all points in this collection
         cur = conn.execute(
-            "SELECT id FROM memory_text WHERE session_id = ?",
-            (collection_name,)
+            "SELECT id FROM memory_text WHERE session_id = ?", (collection_name,)
         )
         deleted_ids = [r[0] for r in cur.fetchall()]
         conn.execute("DELETE FROM memory_text WHERE session_id = ?", (collection_name,))
         conn.commit()
-        logging.info(f"[DELETE] Cleared all points from collection {collection_name} ({len(deleted_ids)} records)")
+        logging.info(
+            f"[DELETE] Cleared all points from collection {collection_name} ({len(deleted_ids)} records)"
+        )
     else:
         # Check for id-based filter
         for clause in must:
@@ -694,7 +866,9 @@ async def qdrant_delete_points(collection_name: str, request: Request, wait: Opt
                 )
                 deleted_ids.extend(ids)
         conn.commit()
-        logging.info(f"[DELETE] Removed {len(deleted_ids)} points from {collection_name}")
+        logging.info(
+            f"[DELETE] Removed {len(deleted_ids)} points from {collection_name}"
+        )
 
     return {
         "status": "ok",
@@ -769,15 +943,18 @@ async def q_upsert_points_debug(collection_name: str, request: Request):
         "result": {
             "operation_id": int(time.time()),
             "ids": results_ids,
-            "num_received": len(points)
-        }
+            "num_received": len(points),
+        },
     }
 
 
-
 # Debug-only delete endpoint: logs everything, always returns OK.
-@app.api_route("/collections/{collection_name}/points/delete", methods=["POST", "DELETE", "PUT"])
-async def q_delete_points_debug_all(collection_name: str, request: Request, wait: Optional[bool] = False):
+@app.api_route(
+    "/collections/{collection_name}/points/delete", methods=["POST", "DELETE", "PUT"]
+)
+async def q_delete_points_debug_all(
+    collection_name: str, request: Request, wait: Optional[bool] = False
+):
     """Debug-only delete endpoint: logs everything, always returns OK."""
     content_type = request.headers.get("content-type", "")
     qp = dict(request.query_params)
@@ -793,13 +970,7 @@ async def q_delete_points_debug_all(collection_name: str, request: Request, wait
         body_text = str(raw_body)
     logging.info(f"  Raw body text: {body_text}")
 
-    return {
-        "status": "ok",
-        "result": {
-            "deleted": 0,
-            "ids": []
-        }
-    }
+    return {"status": "ok", "result": {"deleted": 0, "ids": []}}
 
 
 # -------------------------------
@@ -835,3 +1006,18 @@ if __name__ == "__main__":
     print("[SERVER] Starting Ghostwire controller...")
     # Run with direct app object to avoid hyphen module import issues
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+
+# -------------------------------
+# Summarization endpoint
+# -------------------------------
+
+
+@app.post("/summarize")
+async def summarize_endpoint(payload: dict):
+    """Summarize text and return both summary and embedding."""
+    text = payload.get("text")
+    if not text:
+        raise HTTPException(status_code=422, detail="Missing text")
+    summary = await ollama_summarize(text)
+    emb = await ollama_embed(summary)
+    return {"status": "ok", "result": {"summary": summary, "embedding": emb}}

@@ -14,15 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🔮 Summon Source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: 🧪 Prime Python Vessel
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
       - name: 🔥 Ignite uv Forge
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
 
       - name: 🛠️ Cast Artifacts (sdist + wheel)
         run: |

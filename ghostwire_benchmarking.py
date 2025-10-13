@@ -12,7 +12,14 @@ import psutil
 
 OLLAMA_URL = "http://localhost:11434"
 CONTROLLER_URL = "http://localhost:8000"
-MODELS = ["granite-embedding", "nomic-embed-text", "embeddinggemma"]
+MODELS = [
+    "embeddinggemma",
+    "granite-embedding",
+    "nomic-embed-text",
+    "gemma3:1b",
+    "gemma3n:e2b",
+    "gemma3n:e4b",
+]
 
 TEXTS = {
     "short": "The quick brown fox jumps over the lazy dog.",
@@ -37,6 +44,10 @@ async def embed_text(model: str, text: str):
         data = resp.json()
         vec = np.array(data.get("embedding", []))
         return latency, vec
+
+
+def compute_ghostwire_score(latency, stability, mem_usage):
+    return 0.5 * (1 / (1 + latency)) + 0.3 * stability + 0.2 * (1 / (1 + mem_usage))
 
 
 # =========================
@@ -110,15 +121,23 @@ async def run_controller_benchmark():
             mem_diff = after_mem - before_mem
             dim = len(vec)
             results.append((label, latency, dim, mem_diff))
-            print(f"  {label:<8} | {latency:.3f}s | dim={dim} | Δmem={mem_diff:.3f} GB")
+            ghostwire_score = compute_ghostwire_score(latency, 1.0, mem_diff)
+            print(
+                f"  {label:<8} | {latency:.3f}s | dim={dim} | Δmem={mem_diff:.3f} GB | Ghostwire={ghostwire_score:.3f}"
+            )
         except Exception as e:
             print(f"  {label:<8} | ERROR: {e}")
 
     print("\n✅ Controller benchmark complete.\n")
-    print(f"{'Text Size':<10}{'Latency(s)':<12}{'Dim':<10}{'ΔMem(GB)':<10}")
-    print("-" * 60)
+    print(
+        f"{'Text Size':<10}{'Latency(s)':<12}{'Dim':<10}{'ΔMem(GB)':<10}{'Ghostwire':<10}"
+    )
+    print("-" * 70)
     for label, latency, dim, mem_diff in results:
-        print(f"{label:<10}{latency:<12.3f}{dim:<10}{mem_diff:<10.3f}")
+        ghostwire_score = compute_ghostwire_score(latency, 1.0, mem_diff)
+        print(
+            f"{label:<10}{latency:<12.3f}{dim:<10}{mem_diff:<10.3f}{ghostwire_score:<10.3f}"
+        )
     return results
 
 
@@ -137,9 +156,10 @@ async def run_benchmark():
                 latency, vec = await embed_text(model, text)
                 after_mem = psutil.virtual_memory().used / (1024**3)
                 mem_diff = after_mem - before_mem
+                ghostwire_score = compute_ghostwire_score(latency, 1.0, mem_diff)
                 results.append((model, label, latency, len(vec), mem_diff))
                 print(
-                    f"  {label:<8} | {latency:.3f}s | dim={len(vec)} | Δmem={mem_diff:.3f} GB"
+                    f"  {label:<8} | {latency:.3f}s | dim={len(vec)} | Δmem={mem_diff:.3f} GB | Ghostwire={ghostwire_score:.3f}"
                 )
             except Exception as e:
                 print(f"  {label:<8} | ERROR: {e}")
@@ -176,7 +196,12 @@ async def test_stability():
                 for j in range(i + 1, 3)
             ]
             avg_sim = np.mean(sims)
-            print(f"  {model:<20} | avg cosine similarity: {avg_sim:.4f}")
+            ghostwire_score = compute_ghostwire_score(
+                latency=1.0, stability=avg_sim, mem_usage=0.5
+            )
+            print(
+                f"  {model:<20} | avg cosine similarity: {avg_sim:.4f} | Ghostwire score: {ghostwire_score:.3f}"
+            )
         except Exception as e:
             print(f"  {model:<20} | ERROR: {e}")
 

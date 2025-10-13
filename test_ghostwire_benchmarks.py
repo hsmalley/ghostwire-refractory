@@ -7,6 +7,7 @@ import pytest
 from ghostwire_benchmarking import run_benchmark
 from ghostwire_rag_benchmark import run_rag_test
 from ghostwire_retrieval_benchmark import run_retrieval_test
+from ghostwire_summarization_benchmark import run_summarization_benchmark
 
 
 @pytest.fixture(scope="session")
@@ -48,3 +49,11 @@ async def test_retrieval_benchmark():
         print("\n✅ Retrieval benchmark completed successfully.")
     except Exception as e:
         pytest.fail(f"Retrieval benchmark failed: {e}")
+
+
+@pytest.mark.asyncio
+async def test_summarization_benchmark():
+    """Run the summarization benchmark."""
+    result = await run_summarization_benchmark()
+    assert result and all(len(s[2]) > 0 for s in result)
+    print("\n✅ Summarization benchmark completed successfully.")

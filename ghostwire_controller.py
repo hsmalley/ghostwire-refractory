@@ -35,50 +35,144 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 #
+#
 # Config via environment (with safe defaults)
-REMOTE_OLLAMA_URL = os.getenv(
-    "REMOTE_OLLAMA_URL", "http://100.103.237.60:11434/api/generate"
-)
+# Sanitize REMOTE_OLLAMA_URL so it never includes /api/generate twice
+_remote_base = os.getenv("REMOTE_OLLAMA_URL", "http://100.103.237.60:11434")
+REMOTE_OLLAMA_URL = _remote_base.rstrip("/api/generate")
+DEFAULT_OLLAMA_MODEL = os.getenv("LOCAL_OLLAMA_MODEL", "gemma3:1b")
 REMOTE_OLLAMA_MODEL = os.getenv("REMOTE_OLLAMA_MODEL", "gemma3:12b")
 
 # Local Ollama URL for summarization/embedding helpers
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 
-async def stream_from_ollama(prompt: str) -> AsyncGenerator[str, None]:
+async def stream_from_ollama(
+    prompt: str, model: str = DEFAULT_OLLAMA_MODEL, local: bool = False
+) -> AsyncGenerator[str, None]:
     """
     Open the channel to Ollama and stream `response` fragments as they arrive.
 
     Input
     - prompt: The fully composed prompt including any recalled memory context.
+    - model: The model name to use for generation.
+    - local: If True, use the local Ollama endpoint; else use remote.
 
     Yields
     - Text fragments in arrival order; callers should concatenate.
     """
+    if local:
+        target_url = f"{OLLAMA_URL}/api/chat"
+        payload = {
+            "model": model,
+            "stream": True,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an expert summarization assistant. Summarize the provided text clearly and concisely.",
+                },
+                {
+                    "role": "user",
+                    "content": f"Please summarize the following text:\n\n{prompt}",
+                },
+            ],
+        }
+    else:
+        target_url = f"{REMOTE_OLLAMA_URL}/api/generate"
+        payload = {"model": model, "stream": True, "prompt": prompt}
+    logging.info(f"[stream_from_ollama] → {target_url} (local={local})")
     try:
         async with httpx.AsyncClient(timeout=None, http2=True) as client:
             async with client.stream(
                 "POST",
-                REMOTE_OLLAMA_URL,
-                json={"model": REMOTE_OLLAMA_MODEL, "prompt": prompt, "stream": True},
+                target_url,
+                json=payload,
             ) as response:
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as e:
+                    if e.response.status_code == 404 and local:
+                        logging.warning(
+                            f"[stream_from_ollama] Model {model} not found locally. Falling back to gemma3:1b."
+                        )
+                        # Prepare fallback payload for local
+                        fallback_payload = {
+                            "model": "gemma3:1b",
+                            "stream": True,
+                            "input": prompt,
+                        }
+                        async with client.stream(
+                            "POST",
+                            target_url,
+                            json=fallback_payload,
+                        ) as response2:
+                            response2.raise_for_status()
+                            async for line in response2.aiter_lines():
+                                if not line:
+                                    continue
+                                try:
+                                    obj = json.loads(line)
+                                except Exception as e:
+                                    logging.warning(
+                                        f"[stream_from_ollama] Failed to parse line: {e}"
+                                    )
+                                    continue
+
+                                chunk = obj.get("response") or (
+                                    obj.get("message", {}) or {}
+                                ).get("content")
+
+                                if chunk:
+                                    logging.info(
+                                        f"[stream_from_ollama] chunk: {repr(chunk)}"
+                                    )
+                                    yield chunk
+
+                                # Make sure we yield the final chunk before breaking
+                                if obj.get("done"):
+                                    logging.info("[stream_from_ollama] stream complete")
+                                    break
+                        return
+                    else:
+                        raise
                 async for line in response.aiter_lines():
                     if not line:
                         continue
                     try:
                         obj = json.loads(line)
-                    except Exception:
-                        # Skip malformed lines
+                    except Exception as e:
+                        logging.warning(
+                            f"[stream_from_ollama] Failed to parse line: {e}"
+                        )
                         continue
-                    chunk = obj.get("response")
+
+                    chunk = obj.get("response") or (obj.get("message", {}) or {}).get(
+                        "content"
+                    )
+
                     if chunk:
+                        logging.info(f"[stream_from_ollama] chunk: {repr(chunk)}")
                         yield chunk
+
+                    # Make sure we yield the final chunk before breaking
                     if obj.get("done"):
+                        logging.info("[stream_from_ollama] stream complete")
                         break
     except Exception as e:
-        # Surface error to stream and server logs
         yield f"[ERROR] Failed to connect to Ollama: {e}"
+
+
+# -------------------------------
+# Chat completion endpoint (summarization/generation)
+# -------------------------------
+
+
+# Request schema for chat completion
+class ChatCompletionRequest(BaseModel):
+    text: str
+    model: str | None = None
+    history: list[dict[str, str]] | None = None
+    stream: bool = False
 
 
 # -------------------------------
@@ -158,26 +252,30 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
 
 async def ollama_embed(text: str) -> list[float]:
     """Use local Ollama for embedding text."""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(
-            f"{OLLAMA_URL}/api/embeddings",
-            json={"model": "nomic-embed-text", "prompt": text},
-        )
-        data = resp.json()
-        return data.get("embedding", [])
+    logging.info("[ollama_embed] Using local Ollama /api/embeddings endpoint.")
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                f"{OLLAMA_URL}/api/embeddings",
+                json={"model": "embeddinggemma", "input": text},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("embedding", [])
+    except Exception as e:
+        logging.error(f"[ollama_embed] Failed to generate embedding: {e}")
+        return []
 
 
 async def ollama_summarize(text: str) -> str:
     """Use local Ollama for summarization."""
     prompt = f"Summarize this text concisely, keeping key details:\n\n{text}"
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        resp = await client.post(
-            f"{OLLAMA_URL}/api/generate", json={"model": "mistral", "prompt": prompt}
-        )
-        output = ""
-        async for chunk in resp.aiter_text():
-            output += chunk
-        return output.strip()
+    logging.info("[ollama_summarize] Using local Ollama for summarization.")
+    output = ""
+    async for chunk in stream_from_ollama(prompt, model="gemma3n:e4b", local=True):
+        output += chunk
+    logging.info(f"[ollama_summarize] Summary result preview: {output[:120]}...")
+    return output.strip()
 
 
 def contains_code(text: str) -> bool:
@@ -436,7 +534,10 @@ async def ask_streaming_with_embedding(
 
     full_prompt = f"{context_text}User: {text}\n\nAssistant:"
     answer_parts: list[str] = []
-    async for token in stream_from_ollama(full_prompt):
+    # Always use local Ollama for embedding chat/summarization
+    async for token in stream_from_ollama(
+        full_prompt, model=DEFAULT_OLLAMA_MODEL, local=True
+    ):
         answer_parts.append(token)
         yield token
 
@@ -485,40 +586,53 @@ async def chat_embedding(req: ChatEmbeddingRequest):
 
 
 # -------------------------------
+# /chat_completion endpoint
+# -------------------------------
+
+
+@app.post("/chat_completion")
+async def chat_completion(req: ChatCompletionRequest):
+    prompt = req.text or ""
+    model = req.model or DEFAULT_OLLAMA_MODEL
+    summary_text = ""
+
+    logging.info(f"[chat_completion] Starting local summarization with {model}")
+    chunks = []
+    async for chunk in stream_from_ollama(prompt, model=model, local=True):
+        if chunk:
+            chunks.append(chunk)
+    summary_text = "".join(chunks).strip()
+    logging.info(f"[chat_completion] Final summary length: {len(summary_text)}")
+
+    if not summary_text:
+        summary_text = "[ERROR] No summary generated."
+
+    return {"summary": summary_text}
+
+
+# -------------------------------
 # OpenAI-compatible /v1/embeddings endpoint (controller-native)
 # -------------------------------
 
 
-async def generate_embedding(text_input: str, model: str = "nomic-embed-text"):
+async def generate_embedding(text_input: str, model: str = "embeddinggemma"):
     """
-    Generate embedding for a single text string using Ollama backend.
-    Always returns a single vector (list[float]).
+    Generate embedding using local Ollama /api/embeddings endpoint.
     """
-    import httpx
-
     if not isinstance(text_input, str):
         raise TypeError(f"generate_embedding expected str, got {type(text_input)}")
-
+    logging.info("[generate_embedding] Using local Ollama /api/embeddings endpoint.")
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            payload = {"model": model, "input": text_input}
             resp = await client.post(
-                "http://localhost:11434/api/embeddings", json=payload
+                f"{OLLAMA_URL}/api/embeddings",
+                json={"model": model, "input": text_input},
             )
             resp.raise_for_status()
             data = resp.json()
-
-            # Accept either "embedding" or "data[0]['embedding']"
-            embedding = data.get("embedding") or data.get("data", [{}])[0].get(
-                "embedding"
-            )
-            if not embedding:
-                print(f"[WARN] No embedding returned for model={model}")
-                return []
-
-            return embedding
+            return data.get("embedding", [])
     except Exception as e:
-        print(f"[ERROR] generate_embedding failed: {e}")
+        logging.error(f"[generate_embedding] Failed to get embedding: {e}")
         return []
 
 
@@ -533,7 +647,7 @@ async def v1_embeddings(req: dict):
     Ensures generate_embedding() is always called with a single string.
     """
     try:
-        model = req.get("model", "nomic-embed-text")
+        model = req.get("model", "embeddinggemma")
         inputs = req.get("input", "")
 
         if not inputs:

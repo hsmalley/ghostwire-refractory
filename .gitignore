@@ -1,7 +1,8 @@
-/.DS_Store
 /ghostwire-refractory.code-workspace
+/.DS_Store
 /__pycache__
-/__pycache__/**
 /.ruff_cache
 /.venv
 /*.db
+/*.bin
+/*.log

@@ -12,8 +12,9 @@ Ritual
 - Print streamed fragments as they arrive; the wire whispers back.
 """
 
-import os
 import asyncio
+import os
+
 import httpx
 from ollama import AsyncClient
 

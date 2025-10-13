@@ -12,6 +12,7 @@ dependencies = [
     "httpx[http2]>=0.28.1",
     "numpy>=2.3.3",
     "ollama>=0.6.0",
+    "pydantic>=2.12.0",
     "sentence-transformers>=5.1.1",
     "typing>=3.10.0.0",
     "uvicorn>=0.37.0",
@@ -24,3 +25,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ghostwire-refractory"]
+
+[tool.ruff]
+
+[tool.ruff.lint]
+select = ["I"]

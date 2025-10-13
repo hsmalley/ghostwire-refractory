@@ -20,18 +20,18 @@ Notes
 
 import atexit
 import json
+import logging
 import os
-import httpx
 import sqlite3
 import time
-from typing import AsyncGenerator, List, Tuple
+from typing import Any, AsyncGenerator, List, Optional, Tuple
 
 import hnswlib
+import httpx
 import numpy as np
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-
 
 # Config via environment (with safe defaults)
 REMOTE_OLLAMA_URL = os.getenv(
@@ -93,6 +93,9 @@ HNSW_EF = 50
 
 app = FastAPI()
 
+# Set up root logger for debugging
+logging.basicConfig(level=logging.INFO)
+
 
 @app.get("/health")
 async def health_check():
@@ -122,6 +125,14 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
         );
         """
     )
+    # Table to track dropped collections
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS dropped_collections (
+            name TEXT PRIMARY KEY
+        );
+        """
+    )
     conn.commit()
 
 
@@ -147,6 +158,19 @@ def _ensure_hnsw_initialized(conn: sqlite3.Connection) -> None:
     global _hnsw_index, _hnsw_initialized
     if _hnsw_initialized:
         return
+
+    # Try to load persistent HNSW index if available
+    hnsw_path = "memory_index.bin"
+    if os.path.exists(hnsw_path):
+        try:
+            _hnsw_index = hnswlib.Index(space="cosine", dim=EMBED_DIM)
+            _hnsw_index.load_index(hnsw_path)
+            _hnsw_index.set_ef(HNSW_EF)
+            _hnsw_initialized = True
+            print(f"[HNSW] Loaded persistent vector index from {hnsw_path}.")
+            return
+        except Exception as e:
+            print(f"[HNSW] WARNING: Failed to load persistent index ({e}). Falling back to DB backfill.")
 
     # Init index
     _hnsw_index = hnswlib.Index(space="cosine", dim=EMBED_DIM)
@@ -315,6 +339,28 @@ class ChatEmbeddingRequest(BaseModel):
         return self.session_id, text_value, embed_value
 
 
+# --- OpenAI compatibility models ---
+
+
+class EmbeddingRequest(BaseModel):
+    input: str | list[str]
+    model: str | None = None
+
+
+class VectorUpsertRequest(BaseModel):
+    namespace: str
+    id: str | None = None
+    text: str
+    embedding: list[float]
+    metadata: dict | None = None
+
+
+class VectorQueryRequest(BaseModel):
+    namespace: str
+    embedding: list[float]
+    top_k: int = 5
+
+
 async def ask_streaming_with_embedding(
     session_id: str, text: str, embedding: List[float]
 ) -> AsyncGenerator[str, None]:
@@ -386,12 +432,391 @@ async def chat_embedding(req: ChatEmbeddingRequest):
 
 
 # -------------------------------
+# OpenAI-compatible endpoints
+# -------------------------------
+
+
+@app.post("/v1/embeddings")
+async def create_embedding(req: EmbeddingRequest):
+    """OpenAI-compatible embeddings endpoint."""
+    text_input = req.input if isinstance(req.input, str) else " ".join(req.input)
+    model_name = req.model or "mxbai-embed-large"
+
+    async with httpx.AsyncClient(timeout=None) as client:
+        r = await client.post(
+            "http://127.0.0.1:11434/api/embeddings",
+            json={"model": model_name, "input": text_input},
+        )
+        r.raise_for_status()
+        data = r.json()
+
+    embedding = data.get("embedding") or data.get("data", [{}])[0].get("embedding")
+
+    return {
+        "object": "list",
+        "data": [
+            {
+                "object": "embedding",
+                "embedding": embedding,
+                "index": 0,
+            }
+        ],
+        "model": model_name,
+        "usage": {"prompt_tokens": 0, "total_tokens": 0},
+    }
+
+
+@app.post("/v1/vectors/upsert")
+async def upsert_vector(req: VectorUpsertRequest):
+    """Insert or update a vector record (OpenAI-compatible style)."""
+    try:
+        upsert_memory_with_embedding(
+            req.namespace,
+            req.text,
+            json.dumps(req.metadata) if req.metadata else "",
+            req.embedding,
+        )
+        return {"object": "vector.upsert", "status": "ok"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/v1/vectors/query")
+async def query_vector(req: VectorQueryRequest):
+    """Query most similar vectors (OpenAI-compatible style)."""
+    try:
+        results = query_similar_by_embedding(req.namespace, req.embedding, req.top_k)
+        return {
+            "object": "list",
+            "data": [
+                {"prompt_text": p, "answer_text": a, "score": idx}
+                for idx, (p, a) in enumerate(results)
+            ],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/v1/health")
+async def v1_health():
+    """Health check route for OpenAI-compatible services."""
+    return {"object": "health", "status": "ok"}
+
+
+# -------------------------------
+# Qdrant-compatible endpoints
+# -------------------------------
+
+
+class QCollectionParams(BaseModel):
+    vectors: dict[str, Any]
+
+
+class QPointStruct(BaseModel):
+    id: int | str
+    vector: list[float]
+    payload: dict[str, Any] | None = None
+
+
+class QSearchRequest(BaseModel):
+    vector: list[float]
+    top: int = 5
+    filter: Optional[dict[str, Any]] = None
+
+
+# --- Qdrant index request model ---
+class QIndexRequest(BaseModel):
+    field_name: str
+    field_schema: str
+
+
+
+@app.put("/collections/{collection_name}")
+async def q_create_collection(collection_name: str, params: QCollectionParams):
+    """Create a Qdrant-like collection (maps to a GhostWire namespace)."""
+    # Remove from dropped_collections if re-created
+    conn = get_connection()
+    conn.execute("DELETE FROM dropped_collections WHERE name = ?", (collection_name,))
+    conn.commit()
+    size = params.vectors.get("size")
+    if size != EMBED_DIM:
+        raise HTTPException(status_code=400, detail="vector size mismatch")
+    # Optionally store collection metadata here
+    return {
+        "status": "ok",
+        "result": {"name": collection_name, "vectors": params.vectors},
+    }
+
+# --- Qdrant-compatible collection info endpoint ---
+@app.get("/collections/{collection_name}")
+async def q_get_collection_info(collection_name: str):
+    """Qdrant-compatible collection info endpoint."""
+    conn = get_connection()
+    dropped = conn.execute(
+        "SELECT 1 FROM dropped_collections WHERE name = ?", (collection_name,)
+    ).fetchone()
+    if dropped:
+        raise HTTPException(status_code=404, detail="collection not found")
+    cur = conn.execute(
+        "SELECT COUNT(*) FROM memory_text WHERE session_id = ?",
+        (collection_name,)
+    )
+    count = cur.fetchone()[0]
+
+    return {
+        "status": "ok",
+        "result": {
+            "name": collection_name,
+            "vectors_count": count,
+            "config": {
+                "params": {
+                    "vectors": {"size": 1536, "distance": "Cosine"}
+                }
+            }
+        },
+        "time": 0.0001
+    }
+
+# --- Qdrant-compatible collection delete endpoint ---
+@app.delete("/collections/{collection_name}")
+async def q_delete_collection(collection_name: str):
+    """Delete (drop) a collection, removing all its data (Qdrant-compatible)."""
+    conn = get_connection()
+    conn.execute("DELETE FROM memory_text WHERE session_id = ?", (collection_name,))
+    # Record the dropped collection
+    conn.execute(
+        "INSERT OR REPLACE INTO dropped_collections (name) VALUES (?)",
+        (collection_name,),
+    )
+    conn.commit()
+    logging.info(f"[DELETE COLLECTION] Dropped collection {collection_name}")
+    return {
+        "status": "ok",
+        "result": True
+    }
+
+
+@app.post("/collections/{collection_name}/points")
+async def q_upsert_points(collection_name: str, pts: list[QPointStruct]):
+    """Upsert points into a collection (Qdrant-style)."""
+    results = []
+    for p in pts:
+        try:
+            upsert_memory_with_embedding(
+                session_id=collection_name,
+                prompt_text="",
+                answer_text=json.dumps(p.payload or {}),
+                embedding=p.vector,
+            )
+            results.append({"id": p.id})
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    return {"status": "ok", "result": results}
+
+
+@app.post("/collections/{collection_name}/points/search")
+async def q_search(collection_name: str, req: QSearchRequest):
+    """Search points by vector similarity (Qdrant-style)."""
+    try:
+        recs = query_similar_by_embedding(collection_name, req.vector, req.top)
+        response = []
+        for idx, (p, a) in enumerate(recs):
+            try:
+                payload = json.loads(a)
+            except Exception:
+                payload = None
+            response.append({"id": idx, "score": float(1.0 - 0.0), "payload": payload})
+        return {"result": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/collections/{collection_name}/points/{point_id}")
+async def q_get_point(collection_name: str, point_id: str):
+    """Fetch a single point by ID (Qdrant-style)."""
+    conn = get_connection()
+    row = conn.execute(
+        "SELECT embedding, answer_text FROM memory_text WHERE id = ? AND session_id = ?",
+        (point_id, collection_name),
+    ).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="point not found")
+    embedding_blob, ans = row
+    vec = np.frombuffer(embedding_blob, dtype=np.float32).tolist()
+    try:
+        payload = json.loads(ans)
+    except Exception:
+        payload = None
+    return {"id": point_id, "vector": vec, "payload": payload}
+
+
+
+
+# ----------------------------------------
+# Qdrant/KiloCode Compatibility Extensions
+# ----------------------------------------
+
+
+# Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}
+@app.post("/collections/{collection_name}/points/delete")
+async def qdrant_delete_points(collection_name: str, request: Request, wait: Optional[bool] = False):
+    """Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}"""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    conn = get_connection()
+
+    filt = (body or {}).get("filter", {})
+    must = filt.get("must", [])
+
+    deleted_ids = []
+    if not must:
+        # Delete all points in this collection
+        cur = conn.execute(
+            "SELECT id FROM memory_text WHERE session_id = ?",
+            (collection_name,)
+        )
+        deleted_ids = [r[0] for r in cur.fetchall()]
+        conn.execute("DELETE FROM memory_text WHERE session_id = ?", (collection_name,))
+        conn.commit()
+        logging.info(f"[DELETE] Cleared all points from collection {collection_name} ({len(deleted_ids)} records)")
+    else:
+        # Check for id-based filter
+        for clause in must:
+            match = clause.get("match", {})
+            key = clause.get("key")
+            if key == "id" and "any" in match:
+                ids = match["any"]
+                conn.execute(
+                    f"DELETE FROM memory_text WHERE session_id = ? AND id IN ({','.join('?' * len(ids))})",
+                    (collection_name, *ids),
+                )
+                deleted_ids.extend(ids)
+        conn.commit()
+        logging.info(f"[DELETE] Removed {len(deleted_ids)} points from {collection_name}")
+
+    return {
+        "status": "ok",
+        "result": {
+            "deleted": len(deleted_ids),
+            "ids": deleted_ids,
+        },
+    }
+
+
+# 1. Updated /collections/{collection_name}/index route with logging and flexible parsing
+@app.put("/collections/{collection_name}/index")
+async def q_create_index_alias(
+    collection_name: str,
+    request: Request,
+    wait: Optional[bool] = False,
+):
+    """Diagnose Kilo index creation requests."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    logging.info(f"[DEBUG] /index payload for {collection_name}: {body}")
+
+    if "field_name" in body and "field_schema" in body:
+        return {
+            "status": "ok",
+            "result": {"status": "acknowledged", "operation_id": 0},
+        }
+    elif "vectors" in body:
+        params = QCollectionParams(**body)
+        return await q_create_collection(collection_name, params)
+    else:
+        return {"status": "ok", "note": "Index request received", "body": body}
+
+
+# 2. Flexible upsert points route with logging (PUT/POST)
+@app.api_route("/collections/{collection_name}/points", methods=["PUT", "POST"])
+async def q_upsert_points_debug(collection_name: str, request: Request):
+    """Debugging wrapper for Kilo upsert; logs full body."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    logging.info(f"[DEBUG] /points payload for {collection_name}: {body}")
+
+    points = (
+        body
+        if isinstance(body, list)
+        else body.get("points") or body.get("batch") or []
+    )
+    if not isinstance(points, list):
+        raise HTTPException(status_code=422, detail="Invalid upsert payload")
+
+    results_ids = []
+    for p in points:
+        try:
+            qpoint = QPointStruct(**p)
+            upsert_memory_with_embedding(
+                session_id=collection_name,
+                prompt_text="",
+                answer_text=json.dumps(qpoint.payload or {}),
+                embedding=qpoint.vector,
+            )
+            results_ids.append(qpoint.id)
+        except Exception as e:
+            logging.error(f"[ERROR] Failed upsert for point {p}: {e}")
+            raise HTTPException(status_code=500, detail=str(e))
+
+    return {
+        "status": "ok",
+        "result": {
+            "operation_id": int(time.time()),
+            "ids": results_ids,
+            "num_received": len(points)
+        }
+    }
+
+
+
+# Debug-only delete endpoint: logs everything, always returns OK.
+@app.api_route("/collections/{collection_name}/points/delete", methods=["POST", "DELETE", "PUT"])
+async def q_delete_points_debug_all(collection_name: str, request: Request, wait: Optional[bool] = False):
+    """Debug-only delete endpoint: logs everything, always returns OK."""
+    content_type = request.headers.get("content-type", "")
+    qp = dict(request.query_params)
+    raw_body = await request.body()
+    logging.info(f"[DEBUG‑FORCE] Delete request for {collection_name}")
+    logging.info(f"  Headers: content-type={content_type}")
+    logging.info(f"  Query params: {qp}")
+    logging.info(f"  Raw body bytes: {raw_body!r}")
+
+    try:
+        body_text = raw_body.decode("utf-8", errors="ignore")
+    except Exception:
+        body_text = str(raw_body)
+    logging.info(f"  Raw body text: {body_text}")
+
+    return {
+        "status": "ok",
+        "result": {
+            "deleted": 0,
+            "ids": []
+        }
+    }
+
+
+# -------------------------------
 # Graceful shutdown
 # -------------------------------
 
 
 def _close_global_conn():
-    global _global_conn
+    global _global_conn, _hnsw_index
+    # Save HNSW index before closing DB
+    if _hnsw_index is not None:
+        hnsw_path = "memory_index.bin"
+        try:
+            _hnsw_index.save_index(hnsw_path)
+            print(f"[HNSW] Saved vector index to {hnsw_path}.")
+        except Exception as e:
+            print(f"[HNSW] WARNING: Failed to save persistent index ({e}).")
     if _global_conn:
         print("[DB] Closing global SQLite connection.")
         _global_conn.close()

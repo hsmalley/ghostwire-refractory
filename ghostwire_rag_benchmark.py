@@ -29,24 +29,29 @@ TOP_K = 2
 DATASET: List[Tuple[str, str]] = [
     (
         "What is superposition in quantum computing?",
-        "Quantum computers exploit superposition and entanglement to solve problems."
+        "Quantum computers exploit superposition and entanglement to solve problems.",
     ),
     (
         "Tell me about black holes.",
-        "Black holes warp spacetime and can lead to event horizons."
+        "Black holes warp spacetime and can lead to event horizons.",
     ),
     (
         "What kind of animal is a cat?",
-        "Cats are mammals with fur and often show independent behaviors."
+        "Cats are mammals with fur and often show independent behaviors.",
     ),
 ]
 
+
 # Helper to compute Ghostwire score
-def compute_ghostwire_score(quality: float, hallucination: float, latency: float) -> float:
+def compute_ghostwire_score(
+    quality: float, hallucination: float, latency: float
+) -> float:
     return 0.4 * quality + 0.3 * (1 - hallucination) + 0.3 * (1 / (1 + latency))
 
 
-async def retrieve_context(client: httpx.AsyncClient, question: str, model: str) -> List[str]:
+async def retrieve_context(
+    client: httpx.AsyncClient, question: str, model: str
+) -> List[str]:
     """
     Calls the retrieval-only endpoint to get top-k contexts for the question.
     """
@@ -60,7 +65,9 @@ async def retrieve_context(client: httpx.AsyncClient, question: str, model: str)
     return data.get("contexts", [])
 
 
-async def generate_with_context(client: httpx.AsyncClient, question: str, context: str, model: str) -> str:
+async def generate_with_context(
+    client: httpx.AsyncClient, question: str, context: str, model: str
+) -> str:
     """
     Calls the generation endpoint with oracle context to generate an answer.
     """
@@ -124,7 +131,9 @@ async def run_benchmark():
 
                 # 2. Generation with oracle context (ground truth)
                 start_time = time.time()
-                gen_answer = await generate_with_context(client, question, ground_truth_context, model)
+                gen_answer = await generate_with_context(
+                    client, question, ground_truth_context, model
+                )
                 generation_latency = time.time() - start_time
 
                 # Simple heuristic for quality: 0.9 if ground truth context used, else 0.5
@@ -143,7 +152,9 @@ async def run_benchmark():
                 # For demo, assume hallucination 0.2 and quality 0.8 for RAG output
                 hallucination = 0.2
                 rag_quality = 0.8
-                ghostwire_score = compute_ghostwire_score(rag_quality, hallucination, rag_latency)
+                ghostwire_score = compute_ghostwire_score(
+                    rag_quality, hallucination, rag_latency
+                )
                 rag_scores.append(ghostwire_score)
 
                 print(f"RAG answer: {rag_resp.strip()}")

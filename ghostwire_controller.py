@@ -49,7 +49,20 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 # Additional model configuration
 SUMMARY_MODEL = os.getenv("SUMMARY_MODEL", "gemma3:1b")
-EMBED_MODELS = os.getenv("EMBED_MODELS", "embeddinggemma,granite-embedding,nomic-embed-text,mxbai-embed-large,snowflake-arctic-embed,all-minilm").split(",")
+DISABLE_SUMMARIZATION = os.getenv("DISABLE_SUMMARIZATION", "false").lower() in (
+    "1",
+    "true",
+    "yes",
+)
+DEBUG_MODE = os.getenv("DEBUG_MODE", "false").lower() in ("1", "true", "yes")
+EMBED_MODELS = os.getenv(
+    "EMBED_MODELS",
+    "embeddinggemma,granite-embedding,nomic-embed-text,mxbai-embed-large,snowflake-arctic-embed,all-minilm",
+).split(",")
+
+
+if not DEBUG_MODE:
+    logging.getLogger("httpx").setLevel(logging.WARNING)
 
 
 async def stream_from_ollama(
@@ -156,7 +169,8 @@ async def stream_from_ollama(
                     )
 
                     if chunk:
-                        logging.info(f"[stream_from_ollama] chunk: {repr(chunk)}")
+                        if DEBUG_MODE:
+                            logging.info(f"[stream_from_ollama] chunk: {repr(chunk)}")
                         yield chunk
 
                     # Make sure we yield the final chunk before breaking
@@ -197,8 +211,20 @@ HNSW_EF = 50
 
 app = FastAPI()
 
+# add once, right after app = FastAPI(...)
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
 # Set up root logger for debugging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG if DEBUG_MODE else logging.INFO)
 
 
 @app.get("/health")
@@ -386,6 +412,9 @@ async def ollama_embed(text: str) -> list[float]:
 
 
 async def ollama_summarize(text: str) -> str:
+    if DISABLE_SUMMARIZATION:
+        logging.info("[ollama_summarize] Summarization disabled via environment flag.")
+        return text
     """Use local Ollama for summarization."""
     prompt = f"Summarize this text concisely, keeping key details:\n\n{text}"
     logging.info("[ollama_summarize] Using local Ollama for summarization.")
@@ -679,10 +708,14 @@ async def chat_embedding(req: ChatEmbeddingRequest):
 
     # Auto-generate embedding if missing
     if not embedding:
-        logging.info("[chat_embedding] No embedding provided; auto-generating with ollama_embed.")
+        logging.info(
+            "[chat_embedding] No embedding provided; auto-generating with ollama_embed."
+        )
         embedding = await ollama_embed(text)
         if not embedding:
-            raise HTTPException(status_code=500, detail="Failed to auto-generate embedding")
+            raise HTTPException(
+                status_code=500, detail="Failed to auto-generate embedding"
+            )
 
     # Merge context if provided
     if context:
@@ -722,12 +755,25 @@ async def chat_embedding(req: ChatEmbeddingRequest):
 @app.post("/chat_completion")
 async def chat_completion(req: ChatCompletionRequest):
     prompt = req.text or ""
+    if DISABLE_SUMMARIZATION:
+        logging.info(
+            "[chat_completion] Summarization disabled; returning original text."
+        )
+        return {"summary": prompt}
     model = req.model or DEFAULT_OLLAMA_MODEL
     summary_text = ""
 
-    logging.info(f"[chat_completion] Starting local summarization with {model}")
+    # Select remote/local based on model name
+    use_remote = model.startswith("remote-") or model.endswith(":remote")
+    clean_model = model.removeprefix("remote-").removesuffix(":remote")
+
+    logging.info(
+        f"[chat_completion] Starting summarization with {model} (remote={use_remote})"
+    )
     chunks = []
-    async for chunk in stream_from_ollama(prompt, model=model, local=True):
+    async for chunk in stream_from_ollama(
+        prompt, model=clean_model, local=not use_remote
+    ):
         if chunk:
             chunks.append(chunk)
     summary_text = "".join(chunks).strip()
@@ -849,6 +895,263 @@ async def v1_embeddings(req: dict):
             status_code=500,
             content={"error": {"message": str(e), "type": "internal_error"}},
         )
+
+
+# -------------------------------
+# OpenAI-compatible /v1/models endpoint
+# -------------------------------
+
+
+# Inserted: OpenAI-compatible models listing
+@app.get("/v1/models")
+async def v1_models():
+    """OpenAI-compatible models listing for both local and remote Ollama hosts."""
+    models = []
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        # --- Local models ---
+        try:
+            local_resp = await client.get(f"{OLLAMA_URL}/api/tags")
+            local_resp.raise_for_status()
+            local_data = local_resp.json()
+            for m in local_data.get("models", []):
+                models.append(
+                    {
+                        "id": m.get("name"),
+                        "object": "model",
+                        "owned_by": "ghostwire-local",
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"[v1_models] Local model listing failed: {e}")
+            models.append(
+                {
+                    "id": DEFAULT_OLLAMA_MODEL,
+                    "object": "model",
+                    "owned_by": "ghostwire-local",
+                }
+            )
+
+        # --- Remote models ---
+        try:
+            remote_resp = await client.get(f"{REMOTE_OLLAMA_URL}/api/tags")
+            remote_resp.raise_for_status()
+            remote_data = remote_resp.json()
+            for m in remote_data.get("models", []):
+                models.append(
+                    {
+                        "id": f"remote-{m.get('name')}",
+                        "object": "model",
+                        "owned_by": "ghostwire-remote",
+                    }
+                )
+        except Exception as e:
+            logging.warning(f"[v1_models] Remote model listing failed: {e}")
+            models.append(
+                {
+                    "id": f"remote-{REMOTE_OLLAMA_MODEL}",
+                    "object": "model",
+                    "owned_by": "ghostwire-remote",
+                }
+            )
+
+    return {"object": "list", "data": models}
+
+
+# -------------------------------
+# OpenAI-compatible /v1/chat/completions endpoint
+# -------------------------------
+
+from fastapi import Request
+from fastapi.responses import StreamingResponse
+
+
+# OpenAI-style error response helper
+def openai_error(
+    message: str, type_: str = "invalid_request_error", code: str | None = None
+):
+    return JSONResponse(
+        status_code=400,
+        content={
+            "error": {"message": message, "type": type_, "param": None, "code": code}
+        },
+    )
+
+
+@app.post("/v1/chat/completions")
+async def v1_chat_completions(req: Request):
+    """
+    OpenAI-compatible chat completions endpoint.
+    Accepts {"model": "gemma3:1b", "messages": [{"role": "user", "content": "Hello"}]} and proxies to local Ollama.
+    Supports OpenAI-style streaming and extra parameters.
+    """
+    try:
+        # Dummy parse of Authorization header (ignore validation errors)
+        auth = req.headers.get("authorization")
+        if auth and auth.startswith("Bearer "):
+            token = auth[7:]
+            # Ignore token, just for compatibility
+        data = await req.json()
+        model = data.get("model", DEFAULT_OLLAMA_MODEL)
+        messages = data.get("messages", [])
+        # Sanitize message contents to plain text (handles both strings and lists)
+        parts = []
+        for m in messages:
+            content = m.get("content", "")
+            if isinstance(content, list):
+                for item in content:
+                    if isinstance(item, dict) and "text" in item:
+                        parts.append(str(item["text"]))
+                    else:
+                        parts.append(str(item))
+            else:
+                parts.append(str(content))
+        prompt = "\n".join(parts)
+        temperature = data.get("temperature")
+        max_tokens = data.get("max_tokens")
+        top_p = data.get("top_p")
+        n = data.get("n", 1)
+        stop = data.get("stop")
+        stream = data.get("stream", False)
+        # Only n=1 supported
+        if n and n != 1:
+            return openai_error("Only n=1 is supported", code="not_implemented")
+
+        # Select remote/local based on model name
+        use_remote = model.startswith("remote-") or model.endswith(":remote")
+        clean_model = model.removeprefix("remote-").removesuffix(":remote")
+
+        # Only single stop supported, if at all
+        # Streaming mode
+        if stream:
+
+            async def event_stream():
+                content_so_far = ""
+                try:
+                    async for chunk in stream_from_ollama(
+                        prompt, model=clean_model, local=not use_remote
+                    ):
+                        content_so_far += chunk
+                        chunk_obj = {
+                            "id": f"chatcmpl-{int(time.time())}",
+                            "object": "chat.completion.chunk",
+                            "model": model,
+                            "choices": [
+                                {
+                                    "delta": {"content": chunk},
+                                    "index": 0,
+                                    "finish_reason": None,
+                                }
+                            ],
+                        }
+                        yield f"data: {json.dumps(chunk_obj)}\n\n"
+                    # Final chunk with finish_reason
+                    chunk_obj = {
+                        "id": f"chatcmpl-{int(time.time())}",
+                        "object": "chat.completion.chunk",
+                        "model": model,
+                        "choices": [
+                            {
+                                "delta": {},
+                                "index": 0,
+                                "finish_reason": "stop",
+                            }
+                        ],
+                    }
+                    yield f"data: {json.dumps(chunk_obj)}\n\n"
+                    yield "data: [DONE]\n\n"
+                except Exception as e:
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+            return StreamingResponse(event_stream(), media_type="text/event-stream")
+        # Non-streaming mode
+        output = ""
+        async for chunk in stream_from_ollama(
+            prompt, model=clean_model, local=not use_remote
+        ):
+            output += chunk
+        # OpenAI-compliant response with finish_reason and usage
+        prompt_tokens = len(prompt.split())
+        completion_tokens = len(output.split())
+        total_tokens = prompt_tokens + completion_tokens
+        return {
+            "id": f"chatcmpl-{int(time.time())}",
+            "object": "chat.completion",
+            "created": int(time.time()),
+            "model": model,
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": output},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
+                "total_tokens": total_tokens,
+            },
+        }
+    except Exception as e:
+        logging.error(f"[v1_chat_completions] Failed: {e}")
+        return openai_error(str(e), "internal_error")
+
+
+# Inserted: OpenAI-compatible legacy completions endpoint and model detail endpoint
+@app.post("/v1/completions")
+async def v1_completions(req: Request):
+    """Legacy OpenAI completions endpoint, translates prompt to chat format."""
+    try:
+        # Dummy parse of Authorization header (ignore validation errors)
+        auth = req.headers.get("authorization")
+        if auth and auth.startswith("Bearer "):
+            token = auth[7:]
+        data = await req.json()
+        model = data.get("model", DEFAULT_OLLAMA_MODEL)
+        prompt = data.get("prompt", "")
+        # Support extra params, pass through
+        temperature = data.get("temperature")
+        max_tokens = data.get("max_tokens")
+        top_p = data.get("top_p")
+        n = data.get("n", 1)
+        stop = data.get("stop")
+        stream = data.get("stream", False)
+        messages = [{"role": "user", "content": prompt}]
+        # Compose new request for /v1/chat/completions
+        new_body = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "top_p": top_p,
+            "n": n,
+            "stop": stop,
+            "stream": stream,
+        }
+        # Remove None values
+        new_body = {k: v for k, v in new_body.items() if v is not None}
+        # Clone scope and receive for new Request
+        new_req = Request(req.scope, req.receive)
+        new_req._body = json.dumps(new_body).encode()
+        return await v1_chat_completions(new_req)
+    except Exception as e:
+        return openai_error(str(e))
+
+
+@app.get("/v1/models/{model_id}")
+async def v1_model_detail(model_id: str):
+    """Return a single model detail object in OpenAI format."""
+    return {
+        "id": model_id,
+        "object": "model",
+        "owned_by": "ghostwire-local",
+        "permission": [
+            {
+                "id": f"perm-{model_id}",
+                "object": "model_permission",
+                "allow_create_engine": True,
+            }
+        ],
+    }
 
 
 # -------------------------------
@@ -993,7 +1296,7 @@ async def q_upsert_points(collection_name: str, pts: list[QPointStruct]):
                 use_summary = True
 
             summary_text = None
-            if use_summary and text:
+            if use_summary and text and not DISABLE_SUMMARIZATION:
                 try:
                     summary_text = await ollama_summarize(text)
                     emb = await ollama_embed(summary_text)
@@ -1028,21 +1331,106 @@ async def q_upsert_points(collection_name: str, pts: list[QPointStruct]):
     return {"status": "ok", "result": results}
 
 
+from fastapi import Body
+
+
 @app.post("/collections/{collection_name}/points/search")
-async def q_search(collection_name: str, req: QSearchRequest):
-    """Search points by vector similarity (Qdrant-style)."""
+async def q_search(
+    collection_name: str,
+    req: QSearchRequest = Body(...),
+    offset: int = 0,
+    with_payload: bool = False,
+    with_vectors: bool = False,
+):
+    """Search points by vector similarity (Qdrant-style, extended for full compatibility)."""
     try:
-        recs = query_similar_by_embedding(collection_name, req.vector, req.top)
+        recs = query_similar_by_embedding(collection_name, req.vector, req.top + offset)
+        # apply offset & limit slice:
+        sliced = recs[offset : offset + req.top]
         response = []
-        for idx, (p, a) in enumerate(recs):
-            try:
-                payload = json.loads(a)
-            except Exception:
-                payload = None
-            response.append({"id": idx, "score": float(1.0 - 0.0), "payload": payload})
-        return {"result": response}
+
+        conn = get_connection()
+
+        for idx, (p_text, a_json_str) in enumerate(sliced):
+            item = {"id": idx + offset}
+            item["score"] = 1.0  # placeholder; can compute real cosine similarity later
+
+            if with_payload:
+                try:
+                    item["payload"] = json.loads(a_json_str)
+                except Exception:
+                    item["payload"] = {"text": a_json_str}
+
+            if with_vectors:
+                row = conn.execute(
+                    "SELECT embedding FROM memory_text WHERE session_id = ? ORDER BY id LIMIT 1 OFFSET ?",
+                    (collection_name, idx + offset),
+                ).fetchone()
+                if row and row[0]:
+                    item["vector"] = np.frombuffer(row[0], dtype=np.float32).tolist()
+                else:
+                    item["vector"] = None
+
+            response.append(item)
+
+        return {"status": "ok", "time": 0.0001, "result": response}
     except Exception as e:
+        logging.error(f"[ERROR] q_search failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/collections/{collection_name}/points/query")
+async def q_query_alias(collection_name: str, request: Request):
+    """Alias for /points/search to support Qdrant-style 'query' endpoint with flexible input formats."""
+    body = {}
+    try:
+        body = await request.json()
+    except Exception:
+        pass
+    if not isinstance(body, dict):
+        body = {}
+    filt = body.get("filter")
+    if filt is None or not isinstance(filt, dict):
+        filt = {}
+
+    vector = (
+        body.get("vector")
+        or body.get("query")
+        or (body.get("vector", {}) or {}).get("vector")
+        or []
+    )
+    top = body.get("top") or body.get("limit") or 5
+
+    offset = body.get("offset", 0)
+    with_payload = bool(body.get("with_payload", False))
+    with_vectors = bool(body.get("with_vectors", False))
+
+    try:
+        req = QSearchRequest(vector=vector, top=top, filter=filt)
+    except Exception as e:
+        logging.error(f"[ERROR] Failed to parse QSearchRequest: {e}")
+        raise HTTPException(status_code=422, detail=f"Invalid query payload: {e}")
+
+    try:
+        res = await q_search(
+            collection_name,
+            req,
+            offset=offset,
+            with_payload=with_payload,
+            with_vectors=with_vectors,
+        )
+        if not isinstance(res, dict):
+            res = {}
+        if "result" not in res or not isinstance(res["result"], list):
+            res["result"] = []
+        if "status" not in res:
+            res["status"] = "ok"
+        if "time" not in res:
+            res["time"] = 0.0
+        return res
+    except Exception as e:
+        logging.error(f"[ERROR] /points/query failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Query execution failed: {e}")
 
 
 @app.get("/collections/{collection_name}/points/{point_id}")
@@ -1262,9 +1650,13 @@ async def summarize_endpoint(payload: dict):
     text = payload.get("text")
     if not text:
         raise HTTPException(status_code=422, detail="Missing text")
+    if DISABLE_SUMMARIZATION:
+        logging.info(
+            "[summarize_endpoint] Summarization disabled; returning input text."
+        )
+        return {"status": "ok", "summary": text}
     summary = await ollama_summarize(text)
     return {"status": "ok", "summary": summary}
-
 
 
 # -------------------------------
@@ -1272,6 +1664,7 @@ async def summarize_endpoint(payload: dict):
 # -------------------------------
 
 from fastapi import Body
+
 
 @app.post("/retrieve")
 async def retrieve_endpoint(payload: dict = Body(...)):
@@ -1300,7 +1693,9 @@ async def retrieve_endpoint(payload: dict = Body(...)):
             raise HTTPException(status_code=500, detail="Failed to generate embedding")
         memories = query_similar_by_embedding(session_id, embedding, limit=5)
         contexts = [p for p, _ in memories]
-        logging.info(f"[/retrieve] Retrieved {len(contexts)} contexts for session_id={session_id}")
+        logging.info(
+            f"[/retrieve] Retrieved {len(contexts)} contexts for session_id={session_id}"
+        )
         return {"status": "ok", "contexts": contexts}
     except HTTPException:
         raise
@@ -1319,6 +1714,7 @@ async def rag_endpoint(payload: dict):
     """RAG endpoint: embed query, recall similar memory, and stream augmented answer."""
     session_id = payload.get("session_id", "default_session")
     text = payload.get("text")
+    model = payload.get("model", DEFAULT_OLLAMA_MODEL)
     if not text:
         raise HTTPException(status_code=422, detail="Missing text for RAG")
 
@@ -1335,11 +1731,14 @@ async def rag_endpoint(payload: dict):
         context = f"Context: {snippets}\n\n"
 
     prompt = f"{context}User question: {text}\n\nAnswer:"
+    # Select remote/local based on model name
+    use_remote = model.startswith("remote-") or model.endswith(":remote")
+    clean_model = model.removeprefix("remote-").removesuffix(":remote")
 
     async def stream_response():
         try:
             async for chunk in stream_from_ollama(
-                prompt, model=DEFAULT_OLLAMA_MODEL, local=True
+                prompt, model=model, local=not use_remote
             ):
                 yield chunk
         except Exception as e:
@@ -1364,6 +1763,7 @@ async def benchmark_endpoint(payload: dict):
     }
     Returns JSON with results for the requested benchmarks.
     """
+
     # Helper function for GhostWire scoring
     def ghostwire_score(latency: float, length_factor: float = 1.0) -> float:
         base = max(0.0, 1.0 - latency / 5.0)
@@ -1376,28 +1776,55 @@ async def benchmark_endpoint(payload: dict):
 
     # If the provided task isn't one of the known types, assume it's a model name and run all benchmarks
     if task not in ("rag", "summarize", "all"):
-        logging.info(f"[benchmark] Unknown task '{task}', treating it as model name for full benchmark suite.")
+        logging.info(
+            f"[benchmark] Unknown task '{task}', treating it as model name for full benchmark suite."
+        )
         model = task  # interpret the task value as a model name
         task = "all"
 
     results: dict[str, Any] = {}
 
     # 1. Summarization benchmark
-    if task in ("summarize", "all"):
+    if task in ("summarize", "all") and not DISABLE_SUMMARIZATION:
         sum_cases = [
             "Quantum computing uses quantum bits called qubits that can represent 0 and 1 simultaneously.",
             "Large language models are trained on massive text corpora to predict the next word.",
         ]
         sum_out = []
+        # Select remote/local for summarization
+        use_remote = model.startswith("remote-") or model.endswith(":remote")
+        clean_model = model.removeprefix("remote-").removesuffix(":remote")
         for text in sum_cases:
             start = time.time()
-            summary = await ollama_summarize(text)
+            # If using remote, call stream_from_ollama directly; else ollama_summarize
+            if use_remote:
+                summary = ""
+                async for chunk in stream_from_ollama(
+                    f"Summarize this text concisely, keeping key details:\n\n{text}",
+                    model=model,
+                    local=False,
+                ):
+                    summary += chunk
+            else:
+                summary = await ollama_summarize(text)
             latency = time.time() - start
             # Compute compression ratio and ghostwire_score
             ratio = len(summary.split()) / len(text.split()) if text.split() else 1.0
             score = ghostwire_score(latency, 1.0 / max(1.0, ratio))
-            sum_out.append({"input": text, "summary": summary, "latency": latency, "ghostwire_score": score})
+            sum_out.append(
+                {
+                    "input": text,
+                    "summary": summary,
+                    "latency": latency,
+                    "ghostwire_score": score,
+                }
+            )
         results["summarize"] = sum_out
+    else:
+        if task in ("summarize", "all") and DISABLE_SUMMARIZATION:
+            logging.info(
+                "[benchmark] Summarization disabled; skipping summarization benchmark."
+            )
 
     # 2. RAG benchmark
     if task in ("rag", "all"):
@@ -1406,6 +1833,8 @@ async def benchmark_endpoint(payload: dict):
             "How does photosynthesis work in plants?",
         ]
         rag_out = []
+        use_remote = model.startswith("remote-") or model.endswith(":remote")
+        clean_model = model.removeprefix("remote-").removesuffix(":remote")
         for q in rag_cases:
             start = time.time()
             # Generate embedding for the query
@@ -1420,12 +1849,21 @@ async def benchmark_endpoint(payload: dict):
                 context = f"Context: {snippets}\n\n"
             prompt = f"{context}User question: {q}\n\nAnswer:"
             resp_chunks = []
-            async for chunk in stream_from_ollama(prompt, model=model, local=True):
+            async for chunk in stream_from_ollama(
+                prompt, model=model, local=not use_remote
+            ):
                 resp_chunks.append(chunk)
             answer_text = "".join(resp_chunks)
             latency = time.time() - start
             score = ghostwire_score(latency)
-            rag_out.append({"question": q, "answer": answer_text, "latency": latency, "ghostwire_score": score})
+            rag_out.append(
+                {
+                    "question": q,
+                    "answer": answer_text,
+                    "latency": latency,
+                    "ghostwire_score": score,
+                }
+            )
         results["rag"] = rag_out
 
     # Compute overall average ghostwire_score
@@ -1440,7 +1878,9 @@ async def benchmark_endpoint(payload: dict):
     for task_name in results:
         logging.info(f"⚙️  {task_name.upper()} Benchmark Results")
         for case in results[task_name]:
-            logging.info(f" • {case.get('question', case.get('input', ''))[:60]} → {case.get('ghostwire_score', 'N/A')} score | {case.get('latency', 0.0):.2f}s")
+            logging.info(
+                f" • {case.get('question', case.get('input', ''))[:60]} → {case.get('ghostwire_score', 'N/A')} score | {case.get('latency', 0.0):.2f}s"
+            )
     logging.info(f"Average GhostWire score: {avg_score}")
 
     return {"status": "ok", "benchmarks": results, "avg_score": avg_score}

@@ -27,9 +27,7 @@ CONTROLLER_URL = os.getenv(
 EMBED_MODEL = os.getenv("EMBED_MODEL", "embeddinggemma")  # Local embedding model
 EMBED_DIM = int(os.getenv("EMBED_DIM", "768"))
 
-SUMMARIZER_URL = os.getenv(
-    "SUMMARIZER_URL", f"{CONTROLLER_URL}/summarize"
-)
+SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", f"{CONTROLLER_URL}/summarize")
 RAG_URL = os.getenv("RAG_URL", f"{CONTROLLER_URL}/rag")
 BENCH_URL = os.getenv("BENCH_URL", f"{CONTROLLER_URL}/benchmark")
 
@@ -57,6 +55,7 @@ async def embed_text(text: str):
 async def post_json(url, payload):
     """Send JSON payload to URL using a shared AsyncClient and print streamed or JSON responses."""
     import json
+
     async with httpx.AsyncClient(timeout=None) as client:
         try:
             async with client.stream("POST", url, json=payload) as resp:
@@ -73,9 +72,13 @@ async def post_json(url, payload):
                                 q = r.get("question") or r.get("input", "")
                                 score = r.get("ghostwire_score", "N/A")
                                 latency = r.get("latency", 0.0)
-                                print(f"    • {q[:60]} → {score} score | {latency:.2f}s")
+                                print(
+                                    f"    • {q[:60]} → {score} score | {latency:.2f}s"
+                                )
                         if "avg_score" in data:
-                            print(f"\n  🧮 Average GhostWire Score: {data['avg_score']}\n")
+                            print(
+                                f"\n  🧮 Average GhostWire Score: {data['avg_score']}\n"
+                            )
                     elif "summary" in data:
                         print(f"📝 Summary:\n{data['summary']}")
                     elif "answer" in data:
@@ -171,7 +174,9 @@ async def repl():
     print("  /summarize <text>    - Run summarization benchmark")
     print("  /rag <text>          - Run RAG benchmark")
     print("  /bench <model>       - Run benchmark suite for specified model")
-    print("  /direct <text>       - Talk directly to local Ollama model (bypasses controller)")
+    print(
+        "  /direct <text>       - Talk directly to local Ollama model (bypasses controller)"
+    )
     print("  /exit                - Exit the console")
     print("Type your messages or commands below.\n")
 

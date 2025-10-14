@@ -1,82 +1,68 @@
-**GhostWire Refractory — Simple README**
+**GhostWire Refractory — Simple README (Refactored)**
 
-This repo is a small, two‑part system for chat with memory:
-- A web service (the “controller”) that stores message embeddings in SQLite and finds similar past messages using an in‑memory HNSW index.
-- A tiny terminal client that turns your text into an embedding (with a local Ollama model), calls the controller, and streams the reply back.
+This repo is a refactored neural network-based chat system with memory. The system now features:
 
-Use it to experiment with “memory” for conversational apps: each turn is embedded and saved; future turns retrieve similar past content as context for the model that generates the reply.
+- A modular FastAPI web service that stores message embeddings in SQLite and finds similar past messages using an in-memory HNSW index.
+- A terminal client that integrates with the API to provide conversational memory.
+- Multiple API compatibility layers (OpenAI, Qdrant, Ollama).
+- Comprehensive benchmarking tools.
+- Security measures including authentication, rate limiting, and input validation.
+
+Use it to experiment with "memory" for conversational apps: each turn is embedded and saved; future turns retrieve similar past content as context for the model that generates the reply.
 
 **How It Works**
-- The client creates an embedding for your text using your local Ollama instance (default model `nomic-embed-text`).
-- The client POSTs `session_id`, `prompt_text`, and `embedding` to the controller.
-- The controller finds similar past messages (via HNSW or a cosine fallback), builds a prompt that includes those snippets, calls an Ollama text model (local or remote), and streams the response.
-- The controller stores the pair `(prompt_text, answer_text, embedding)` in `memory.db` for future recall.
+- The client creates an embedding for your text and sends `session_id`, `text`, and `embedding` to the API.
+- The API finds similar past messages (via HNSW or a cosine fallback), builds a prompt that includes those snippets, calls an Ollama text model, and streams the response.
+- The API stores the pair `(prompt_text, answer_text, embedding)` in `memory.db` for future recall.
 
 **What You Need**
-- Python 3.12+
+- Python 3.8+
 - Ollama installed
   - Local Ollama for embeddings (pull an embedding model, e.g. `nomic-embed-text`).
   - An Ollama text model for generation (can be the same machine). Example: `llama3.2`.
-- Recommended: `uv` (fast Python tool) to run without managing a venv manually. If you prefer, you can use `pip` with the dependencies listed in `pyproject.toml`.
 
-**Quick Start (recommended with uv)**
+**Quick Start**
 - Start Ollama locally and pull models:
   - `ollama serve`
   - `ollama pull nomic-embed-text`
   - `ollama pull llama3.2`
-- In one terminal, start the controller (run the script to avoid module‑name issues):
-  - `REMOTE_OLLAMA_URL=http://127.0.0.1:11434/api/generate uv run python ghostwire-controller.py`
-  - If your embedding model has 768 dimensions (e.g., `nomic-embed-text`), the defaults match. If not, set `EMBED_DIM` to the correct size on both client and controller.
-- In another terminal, run the client REPL:
-  - `uv run python ghostwire-client.py`
-  - Type a message, press Enter. Type `exit` to quit.
-
-Tip: If your generation host isn’t local, point the controller at it with `REMOTE_OLLAMA_URL=http://<host>:11434/api/generate`. To change models, set `REMOTE_OLLAMA_MODEL` (default `llama3.2:latest`).
+- Install dependencies:
+  - `pip install -r requirements.txt`
+- In one terminal, start the server:
+  - `cd python/src/ghostwire`
+  - `python main.py`
+- In another terminal, run the client:
+  - `cd python/client`
+  - `python operator_console.py`
 
 **Configuration**
-- Controller (environment variables):
-  - `DB_PATH` — SQLite file path (default `memory.db`).
-  - `EMBED_DIM` — embedding size (default `768`). Must match the client’s embedding model dimension.
-  - `REMOTE_OLLAMA_URL` — Ollama generate endpoint (default points to a sample IP; override it).
-  - `REMOTE_OLLAMA_MODEL` — text model tag for generation (default `llama3.2:latest`).
-- Client (environment variables):
-  - `LOCAL_OLLAMA` — local Ollama base URL for embeddings (default `http://127.0.0.1:11434`).
-  - `CONTROLLER_URL` — controller base URL (default `http://127.0.0.1:8000`).
-  - `EMBED_MODEL` — embedding model (default `nomic-embed-text`).
-  - `EMBED_DIM` — must equal the chosen embedding model’s dimension.
+- Application settings are configured through environment variables in `.env` file or system environment
+- Key settings include: HOST, PORT, DB_PATH, EMBED_DIM, LOCAL_OLLAMA_URL, REMOTE_OLLAMA_URL, etc.
 
-**API (for use without the client)**
-- Health check:
-  - `GET /health` → `{ "status": "ok" }`
-- Streamed chat with embedding:
-  - `POST /chat_embedding`
-  - JSON body: `{ "session_id": "string", "text" (or "prompt_text"): "string", "embedding": [float, ...] }`
-  - Response: plain‑text stream of the generated answer.
-  - Example curl (streaming):
-    - ``curl -N -s -X POST "$CONTROLLER_URL/chat_embedding" -H "Content-Type: application/json" -d '{"session_id":"demo","text":"hello","embedding":[0.0, ...]}'``
+**API Endpoints**
+- Health check: `GET /api/v1/health`
+- Embeddings: `POST /api/v1/embeddings`
+- Chat with memory: `POST /api/v1/chat/chat_embedding`
+- Memory storage: `POST /api/v1/chat/memory`
+- Vector operations: `POST /api/v1/vectors/upsert` and `POST /api/v1/vectors/query`
 
 **Data Storage**
 - SQLite database: `memory.db` is created automatically with table `memory_text` containing `session_id`, `prompt_text`, `answer_text`, `timestamp`, and the vector `embedding` as a BLOB.
-- HNSW index: built in memory at startup and backfilled from existing rows. It is not persisted; it’s rebuilt from the DB when the controller starts.
-
-**Common Issues**
-- “embedding dim X != EMBED_DIM Y”
-  - Your embedding model’s output size doesn’t match. Set `EMBED_DIM` on both client and controller to your model’s dimension, or switch to a matching model.
-- Connection errors to Ollama
-  - Ensure `ollama serve` is running. For remote generation, verify `REMOTE_OLLAMA_URL` is reachable and ends with `/api/generate`.
-- hnswlib install/build problems
-  - Ensure a working C/C++ toolchain is available on your system. On macOS, install Xcode Command Line Tools.
+- HNSW index: built in memory at startup and backfilled from existing rows. It is persisted to `memory_index.bin` and loaded on startup.
 
 **What Lives Where**
-- `ghostwire-controller.py` — FastAPI app; stores and retrieves embeddings; streams replies.
-- `ghostwire-client.py` — Terminal client; builds embeddings via local Ollama and calls the controller.
-- `memory.db` — SQLite file with stored turns (created on first run).
-- `.github/workflows/` — CI for building and cutting releases with `uv`.
+- `python/src/ghostwire/` — Main application code organized in modules
+- `python/client/` — Client application
+- `python/benchmarks/` — Benchmarking tools
+- `python/tests/` — Unit and integration tests
+- `APIDOC.md` — API documentation
 
-**Notes and Limits**
-- This is a minimal demo, not a production service. There’s no auth, no rate limiting, and no encryption beyond what your environment provides.
-- The HNSW index lives in RAM and is rebuilt from the DB on startup.
-- If you point the controller at a remote Ollama host, your prompts are sent there for generation.
+**Security Features**
+- JWT-based authentication
+- Rate limiting
+- Input validation and sanitization
+- Secure password hashing
+- Proper CORS configuration (no longer allows all origins)
 
 **License**
 - MIT‑style. See `LICENSE.md`.

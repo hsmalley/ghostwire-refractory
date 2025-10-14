@@ -25,10 +25,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project.scripts]
-ghostwire = "python.src.ghostwire.main:main"
+ghostwire = "ghostwire.main:app"
 
 [tool.setuptools.packages.find]
-where = ["python/src"]
+where = ["python"]
+include = ["ghostwire*"]
 
 [tool.pytest.ini_options]
 testpaths = ["python/tests"]

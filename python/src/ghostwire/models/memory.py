@@ -1,35 +1,37 @@
 """
 Database models for GhostWire Refractory
 """
+
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
-import sqlite3
-import json
 
 
 class Memory(BaseModel):
     """Database model for memory entries"""
-    id: Optional[int] = None
+
+    id: int | None = None
     session_id: str
     prompt_text: str
     answer_text: str
     timestamp: float = Field(default_factory=lambda: datetime.utcnow().timestamp())
     embedding: bytes  # Serialized embedding vector
-    summary_text: Optional[str] = None
+    summary_text: str | None = None
 
 
 class MemoryCreate(BaseModel):
     """Model for creating new memories"""
+
     session_id: str
     prompt_text: str
     answer_text: str
     embedding: list[float]
-    summary_text: Optional[str] = None
+    summary_text: str | None = None
 
 
 class MemoryQuery(BaseModel):
     """Model for memory queries"""
+
     session_id: str
     embedding: list[float]
     limit: int = 5

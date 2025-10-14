@@ -1,12 +1,14 @@
 """
 GhostWire Refractory - Main Application Entry Point
 """
+
 import atexit
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from ..api.v1.router import api_router
 from ..api.middleware.rate_limit import RateLimitMiddleware
+from ..api.v1.router import api_router
 from ..config.settings import settings
 from ..database.connection import close_db_pool
 from ..vector.hnsw_index import get_hnsw_manager
@@ -42,7 +44,7 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health_check():
         return {"status": "ok", "version": "1.0.0"}
-    
+
     # Startup and shutdown events
     @app.on_event("startup")
     async def startup_event():
@@ -50,7 +52,7 @@ def create_app() -> FastAPI:
         # Initialize HNSW index
         hnsw_manager = get_hnsw_manager()
         hnsw_manager.initialize_index()
-    
+
     @app.on_event("shutdown")
     async def shutdown_event():
         print("[SERVER] Shutting down GhostWire Refractory...")
@@ -68,17 +70,18 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(
-        "src.ghostwire.main:app",
+        "python.src.ghostwire.main:app",
         host=settings.HOST,
         port=settings.PORT,
         reload=settings.DEBUG,
     )
-    
+
     # Register cleanup function
     def cleanup():
         hnsw_manager = get_hnsw_manager()
         hnsw_manager.save_index()
         close_db_pool()
-    
+
     atexit.register(cleanup)

@@ -1,6 +1,7 @@
 """
 Health check endpoints for GhostWire Refractory
 """
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 

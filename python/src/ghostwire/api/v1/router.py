@@ -1,13 +1,13 @@
 """
 Main API router for GhostWire Refractory v1
 """
+
 from fastapi import APIRouter
 
-from .health import router as health_router
-from .embeddings import router as embeddings_router
-from .vectors import router as vectors_router
 from .chat import router as chat_router
-
+from .embeddings import router as embeddings_router
+from .health import router as health_router
+from .vectors import router as vectors_router
 
 # Main API router
 api_router = APIRouter()

@@ -68,15 +68,30 @@ ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
 
 ## Running the Application
 
+### Method 1: Install in development mode (recommended)
 ```bash
-cd python/src/ghostwire
-python main.py
+cd /path/to/ghostwire-refractory  # Project root
+pip install -e .
+ghostwire  # This uses the entry point defined in pyproject.toml
 ```
 
 Or with uv:
-
 ```bash
-uv run python -m python.src.ghostwire.main
+uv run pip install -e .
+uv run ghostwire
+```
+
+### Method 2: Direct execution with proper PYTHONPATH
+```bash
+cd /path/to/ghostwire-refractory  # Project root
+PYTHONPATH=python/src python -m python.src.ghostwire.main
+```
+
+### Method 3: Using uv with PYTHONPATH
+From the project root:
+```bash
+cd /path/to/ghostwire-refractory  # Project root
+PYTHONPATH=python/src uv run python -m python.src.ghostwire.main
 ```
 
 The API will be available at `http://localhost:8000`
@@ -90,8 +105,8 @@ See [APIDOC.md](APIDOC.md) for detailed API documentation.
 To use the operator console client:
 
 ```bash
-cd python/client
-python operator_console.py
+cd /path/to/ghostwire-refractory  # Project root
+PYTHONPATH=python/src python -m python.client.operator_console
 ```
 
 ## Benchmarking
@@ -99,10 +114,18 @@ python operator_console.py
 Run the benchmark suite:
 
 ```bash
-cd python/benchmarks
-python embedding_benchmarks.py
-python rag_benchmarks.py
-python summarization_benchmarks.py
+cd /path/to/ghostwire-refractory  # Project root
+PYTHONPATH=python/src python -m python.benchmarks.embedding_benchmarks
+PYTHONPATH=python/src python -m python.benchmarks.rag_benchmarks
+PYTHONPATH=python/src python -m python.benchmarks.summarization_benchmarks
+```
+
+Or run all benchmarks from the project root:
+```bash
+export PYTHONPATH=python/src
+python -m python.benchmarks.embedding_benchmarks
+python -m python.benchmarks.rag_benchmarks
+python -m python.benchmarks.summarization_benchmarks
 ```
 
 ## Testing
@@ -110,8 +133,14 @@ python summarization_benchmarks.py
 Run the test suite:
 
 ```bash
-cd python/tests
-python -m pytest
+cd /path/to/ghostwire-refractory  # Project root
+PYTHONPATH=python/src python -m pytest python/tests/
+```
+
+Or with pytest discovery:
+```bash
+cd /path/to/ghostwire-refractory  # Project root
+PYTHONPATH=python/src pytest python/tests/
 ```
 
 ## Dependencies

@@ -1,0 +1,8 @@
+*
+!.gitignore
+!GHOSTWIRE_THEME.md
+!GHOSTWIRE_FLAVOR.md
+!workflows/
+!dependabot.yml
+!ISSUE_TEMPLATE
+!pull_request_template.md

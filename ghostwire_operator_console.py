@@ -27,9 +27,13 @@ CONTROLLER_URL = os.getenv(
 EMBED_MODEL = os.getenv("EMBED_MODEL", "embeddinggemma")  # Local embedding model
 EMBED_DIM = int(os.getenv("EMBED_DIM", "768"))
 
-SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", f"{CONTROLLER_URL}/summarization_benchmark")
+SUMMARIZER_URL = os.getenv(
+    "SUMMARIZER_URL", f"{CONTROLLER_URL}/summarize"
+)
 RAG_URL = os.getenv("RAG_URL", f"{CONTROLLER_URL}/rag")
-BENCH_URL = os.getenv("BENCH_URL", f"{CONTROLLER_URL}/benchmark_suite")
+BENCH_URL = os.getenv("BENCH_URL", f"{CONTROLLER_URL}/benchmark")
+
+DEFAULT_CHAT_MODEL = os.getenv("DEFAULT_CHAT_MODEL", "gemma3:1b")
 
 
 async def embed_text(text: str):
@@ -52,18 +56,41 @@ async def embed_text(text: str):
 
 async def post_json(url, payload):
     """Send JSON payload to URL using a shared AsyncClient and print streamed or JSON responses."""
+    import json
     async with httpx.AsyncClient(timeout=None) as client:
         try:
             async with client.stream("POST", url, json=payload) as resp:
                 resp.raise_for_status()
-                # Try streaming text chunks if possible
-                async for chunk in resp.aiter_text():
-                    print(chunk, end="", flush=True)
-                print()
+                text = await resp.aread()
+                try:
+                    data = json.loads(text)
+                    print()
+                    if "benchmarks" in data:
+                        print("⚙️ Benchmark Results")
+                        for task, results in data["benchmarks"].items():
+                            print(f"  {task.upper()}:")
+                            for r in results:
+                                q = r.get("question") or r.get("input", "")
+                                score = r.get("ghostwire_score", "N/A")
+                                latency = r.get("latency", 0.0)
+                                print(f"    • {q[:60]} → {score} score | {latency:.2f}s")
+                        if "avg_score" in data:
+                            print(f"\n  🧮 Average GhostWire Score: {data['avg_score']}\n")
+                    elif "summary" in data:
+                        print(f"📝 Summary:\n{data['summary']}")
+                    elif "answer" in data:
+                        print(f"📚 Answer:\n{data['answer']}")
+                    else:
+                        print(json.dumps(data, indent=2))
+                except json.JSONDecodeError:
+                    # fallback to streaming
+                    async for chunk in resp.aiter_text():
+                        print(chunk, end="", flush=True)
+                    print()
         except httpx.HTTPStatusError as e:
             try:
                 content = await e.response.aread()
-                body = content.decode(errors='ignore')
+                body = content.decode(errors="ignore")
             except Exception:
                 body = "<stream closed>"
             print(f"HTTP error {e.response.status_code}: {body}")
@@ -113,6 +140,26 @@ async def run_benchmark(session_id, model):
     await post_json(BENCH_URL, payload)
 
 
+async def run_direct(text):
+    """Send a raw generation request directly to the local Ollama API and stream output."""
+    print("💬 Direct Ollama response:")
+    client = AsyncClient(host=LOCAL_OLLAMA)
+    try:
+        stream = await client.generate(
+            model=DEFAULT_CHAT_MODEL,
+            prompt=text,
+            stream=True,
+        )
+        async for token in stream:
+            # Each token is a dict like {'response': 'partial text', 'done': False}
+            chunk = token.get("response")
+            if chunk:
+                print(chunk, end="", flush=True)
+        print()
+    except Exception as e:
+        print(f"Error during direct generation: {e}")
+
+
 async def repl():
     """Interactive REPL: type commands to commune; Ctrl+C to jack out."""
     session_id = "repl_session"
@@ -124,6 +171,7 @@ async def repl():
     print("  /summarize <text>    - Run summarization benchmark")
     print("  /rag <text>          - Run RAG benchmark")
     print("  /bench <model>       - Run benchmark suite for specified model")
+    print("  /direct <text>       - Talk directly to local Ollama model (bypasses controller)")
     print("  /exit                - Exit the console")
     print("Type your messages or commands below.\n")
 
@@ -153,6 +201,12 @@ async def repl():
                     print("Please provide a model name for benchmarking.")
                     continue
                 await run_benchmark(session_id, model)
+            elif line.startswith("/direct "):
+                text = line[len("/direct ") :].strip()
+                if not text:
+                    print("Please provide text to send directly to Ollama.")
+                    continue
+                await run_direct(text)
             elif line.startswith("/chat "):
                 text = line[len("/chat ") :].strip()
                 if not text:

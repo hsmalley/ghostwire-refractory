@@ -43,8 +43,13 @@ REMOTE_OLLAMA_URL = _remote_base.rstrip("/api/generate")
 DEFAULT_OLLAMA_MODEL = os.getenv("LOCAL_OLLAMA_MODEL", "gemma3:1b")
 REMOTE_OLLAMA_MODEL = os.getenv("REMOTE_OLLAMA_MODEL", "gemma3:12b")
 
+
 # Local Ollama URL for summarization/embedding helpers
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
+
+# Additional model configuration
+SUMMARY_MODEL = os.getenv("SUMMARY_MODEL", "gemma3:1b")
+EMBED_MODELS = os.getenv("EMBED_MODELS", "embeddinggemma,granite-embedding,nomic-embed-text,mxbai-embed-large,snowflake-arctic-embed,all-minilm").split(",")
 
 
 async def stream_from_ollama(
@@ -257,21 +262,18 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
 # Global variable for embedding model cache
 _cached_embed_model: str | None = None
 
+
 async def ollama_embed(text: str) -> list[float]:
     """Use local Ollama for embedding text, trying both /api/embeddings and /api/embed endpoints for each model."""
     global _cached_embed_model
     import json as _json  # for logging response JSON
-    candidate_models = [
-        "embeddinggemma",
-        "granite-embedding",
-        "nomic-embed-text",
-        "mxbai-embed-large",
-        "snowflake-arctic-embed",
-        "all-minilm",
-    ]
+
+    candidate_models = EMBED_MODELS
     # If we have a cached model, try it first and only
     if _cached_embed_model:
-        logging.info(f"[ollama_embed] Using cached embedding model: '{_cached_embed_model}'")
+        logging.info(
+            f"[ollama_embed] Using cached embedding model: '{_cached_embed_model}'"
+        )
         candidate_models = [_cached_embed_model]
     last_error = None
 
@@ -279,23 +281,38 @@ async def ollama_embed(text: str) -> list[float]:
         try:
             async with httpx.AsyncClient(timeout=30.0) as client:
                 # First try /api/embeddings
-                logging.info(f"[ollama_embed] Trying /api/embeddings for model '{model_name}'...")
+                logging.info(
+                    f"[ollama_embed] Trying /api/embeddings for model '{model_name}'..."
+                )
                 resp = await client.post(
                     f"{OLLAMA_URL}/api/embeddings",
                     json={"model": model_name, "input": text},
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                emb = data.get("embedding") or data.get("data", [{}])[0].get("embedding")
+                emb = data.get("embedding") or data.get("data", [{}])[0].get(
+                    "embedding"
+                )
                 # NEW: Check for "embeddings" (plural) at root if not found
-                if not emb and "embeddings" in data and isinstance(data["embeddings"], list) and data["embeddings"]:
+                if (
+                    not emb
+                    and "embeddings" in data
+                    and isinstance(data["embeddings"], list)
+                    and data["embeddings"]
+                ):
                     emb = data["embeddings"][0]
-                    logging.info(f"[ollama_embed] Found embedding under 'embeddings' key for model '{model_name}'")
+                    logging.info(
+                        f"[ollama_embed] Found embedding under 'embeddings' key for model '{model_name}'"
+                    )
                 if emb:
-                    logging.info(f"[ollama_embed] Success with model '{model_name}' using /api/embeddings endpoint.")
+                    logging.info(
+                        f"[ollama_embed] Success with model '{model_name}' using /api/embeddings endpoint."
+                    )
                     if _cached_embed_model != model_name:
                         _cached_embed_model = model_name
-                        logging.info(f"[ollama_embed] Caching embedding model: '{model_name}' for future use.")
+                        logging.info(
+                            f"[ollama_embed] Caching embedding model: '{model_name}' for future use."
+                        )
                     return emb
                 # Log diagnostic info for /api/embeddings
                 if "error" in data or "message" in data:
@@ -308,23 +325,38 @@ async def ollama_embed(text: str) -> list[float]:
                         f"Response JSON: {_json.dumps(data)[:500]}"
                     )
                 # Now try /api/embed as fallback
-                logging.info(f"[ollama_embed] Trying /api/embed fallback for model '{model_name}'...")
+                logging.info(
+                    f"[ollama_embed] Trying /api/embed fallback for model '{model_name}'..."
+                )
                 resp2 = await client.post(
                     f"{OLLAMA_URL}/api/embed",
                     json={"model": model_name, "input": text},
                 )
                 resp2.raise_for_status()
                 data2 = resp2.json()
-                emb2 = data2.get("embedding") or data2.get("data", [{}])[0].get("embedding")
+                emb2 = data2.get("embedding") or data2.get("data", [{}])[0].get(
+                    "embedding"
+                )
                 # NEW: Check for "embeddings" (plural) at root if not found
-                if not emb2 and "embeddings" in data2 and isinstance(data2["embeddings"], list) and data2["embeddings"]:
+                if (
+                    not emb2
+                    and "embeddings" in data2
+                    and isinstance(data2["embeddings"], list)
+                    and data2["embeddings"]
+                ):
                     emb2 = data2["embeddings"][0]
-                    logging.info(f"[ollama_embed] Found embedding under 'embeddings' key for model '{model_name}'")
+                    logging.info(
+                        f"[ollama_embed] Found embedding under 'embeddings' key for model '{model_name}'"
+                    )
                 if emb2:
-                    logging.info(f"[ollama_embed] Success with model '{model_name}' using /api/embed endpoint.")
+                    logging.info(
+                        f"[ollama_embed] Success with model '{model_name}' using /api/embed endpoint."
+                    )
                     if _cached_embed_model != model_name:
                         _cached_embed_model = model_name
-                        logging.info(f"[ollama_embed] Caching embedding model: '{model_name}' for future use.")
+                        logging.info(
+                            f"[ollama_embed] Caching embedding model: '{model_name}' for future use."
+                        )
                     return emb2
                 # Log diagnostic info for /api/embed
                 if "error" in data2 or "message" in data2:
@@ -341,11 +373,15 @@ async def ollama_embed(text: str) -> list[float]:
             logging.warning(f"[ollama_embed] Model '{model_name}' failed: {e}")
             # If this was the cached model, clear cache so we try all on next call
             if _cached_embed_model == model_name:
-                logging.info(f"[ollama_embed] Cached embedding model '{model_name}' failed. Clearing cache for fallback.")
+                logging.info(
+                    f"[ollama_embed] Cached embedding model '{model_name}' failed. Clearing cache for fallback."
+                )
                 _cached_embed_model = None
             continue
 
-    logging.error(f"[ollama_embed] All embedding models failed. Last error: {last_error}")
+    logging.error(
+        f"[ollama_embed] All embedding models failed. Last error: {last_error}"
+    )
     return []
 
 
@@ -354,7 +390,7 @@ async def ollama_summarize(text: str) -> str:
     prompt = f"Summarize this text concisely, keeping key details:\n\n{text}"
     logging.info("[ollama_summarize] Using local Ollama for summarization.")
     output = ""
-    async for chunk in stream_from_ollama(prompt, model="gemma3n:e4b", local=True):
+    async for chunk in stream_from_ollama(prompt, model=SUMMARY_MODEL, local=True):
         output += chunk
     logging.info(f"[ollama_summarize] Summary result preview: {output[:120]}...")
     return output.strip()
@@ -565,11 +601,12 @@ class ChatEmbeddingRequest(BaseModel):
     text: str | None = None
     prompt_text: str | None = None
     embedding: list[float] | None = None
+    context: str | None = None
 
     def normalized(self):
         text_value = self.text or self.prompt_text or ""
         embed_value = self.embedding or []
-        return self.session_id, text_value, embed_value
+        return self.session_id, text_value, embed_value, self.context
 
 
 # --- OpenAI compatibility models ---
@@ -635,11 +672,21 @@ async def ask_streaming_with_embedding(
 async def chat_embedding(req: ChatEmbeddingRequest):
     """HTTP entrypoint: chat via embedding. Streams plain text back to caller."""
     try:
-        session_id, text, embedding = req.normalized()
-
+        session_id, text, embedding, context = req.normalized()
     except Exception as e:
         print(f"[WARN] Could not parse chat_embedding payload: {e}")
-        session_id, text, embedding = "unknown", "", []
+        session_id, text, embedding, context = "unknown", "", [], None
+
+    # Auto-generate embedding if missing
+    if not embedding:
+        logging.info("[chat_embedding] No embedding provided; auto-generating with ollama_embed.")
+        embedding = await ollama_embed(text)
+        if not embedding:
+            raise HTTPException(status_code=500, detail="Failed to auto-generate embedding")
+
+    # Merge context if provided
+    if context:
+        text = f"{context.strip()}\n\nQuestion: {text.strip()}"
 
     # Validate request before streaming
     if not text:
@@ -1211,13 +1258,55 @@ if __name__ == "__main__":
 
 @app.post("/summarize")
 async def summarize_endpoint(payload: dict):
-    """Summarize text and return both summary and embedding."""
+    """Summarize text using local Ollama and return summary text."""
     text = payload.get("text")
     if not text:
         raise HTTPException(status_code=422, detail="Missing text")
     summary = await ollama_summarize(text)
-    emb = await ollama_embed(summary)
-    return {"status": "ok", "result": {"summary": summary, "embedding": emb}}
+    return {"status": "ok", "summary": summary}
+
+
+
+# -------------------------------
+# Retrieval-only endpoint
+# -------------------------------
+
+from fastapi import Body
+
+@app.post("/retrieve")
+async def retrieve_endpoint(payload: dict = Body(...)):
+    """
+    Retrieval-only endpoint for benchmarks.
+    Accepts: {"session_id": str, "text": str}
+    Returns: {"status": "ok", "contexts": [list of prompt_text strings]}
+    """
+    try:
+        session_id = payload.get("session_id")
+        text = payload.get("text")
+        if not session_id or not isinstance(session_id, str) or not session_id.strip():
+            logging.error("[/retrieve] Missing or invalid session_id")
+            raise HTTPException(status_code=422, detail="Missing or invalid session_id")
+        if not text or not isinstance(text, str) or not text.strip():
+            logging.error("[/retrieve] Missing or invalid text")
+            raise HTTPException(status_code=422, detail="Missing or invalid text")
+    except Exception as e:
+        logging.error(f"[/retrieve] Error parsing input: {e}")
+        raise HTTPException(status_code=422, detail="Invalid input payload")
+
+    try:
+        embedding = await ollama_embed(text)
+        if not embedding:
+            logging.error("[/retrieve] Failed to generate embedding")
+            raise HTTPException(status_code=500, detail="Failed to generate embedding")
+        memories = query_similar_by_embedding(session_id, embedding, limit=5)
+        contexts = [p for p, _ in memories]
+        logging.info(f"[/retrieve] Retrieved {len(contexts)} contexts for session_id={session_id}")
+        return {"status": "ok", "contexts": contexts}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logging.error(f"[/retrieve] Retrieval error: {e}")
+        raise HTTPException(status_code=500, detail=f"Retrieval error: {e}")
 
 
 # -------------------------------
@@ -1249,9 +1338,109 @@ async def rag_endpoint(payload: dict):
 
     async def stream_response():
         try:
-            async for chunk in stream_from_ollama(prompt, model=DEFAULT_OLLAMA_MODEL, local=True):
+            async for chunk in stream_from_ollama(
+                prompt, model=DEFAULT_OLLAMA_MODEL, local=True
+            ):
                 yield chunk
         except Exception as e:
             yield f"[ERROR] {e}"
 
     return StreamingResponse(stream_response(), media_type="text/plain")
+
+
+# -------------------------------
+# Benchmark endpoint
+# -------------------------------
+
+
+@app.post("/benchmark")
+async def benchmark_endpoint(payload: dict):
+    """
+    Run a benchmark task.
+    payload: {
+        "session_id": str,
+        "task": "rag" | "summarize" | "all",
+        "model": Optional[str]  # which generation model to use, defaults to DEFAULT_OLLAMA_MODEL
+    }
+    Returns JSON with results for the requested benchmarks.
+    """
+    # Helper function for GhostWire scoring
+    def ghostwire_score(latency: float, length_factor: float = 1.0) -> float:
+        base = max(0.0, 1.0 - latency / 5.0)
+        return round(100 * base * length_factor, 2)
+
+    session_id = payload.get("session_id", "benchmark")
+    # Allow both "task" and "model" keys to trigger benchmarks from the operator console
+    task = payload.get("task") or payload.get("model")
+    model = payload.get("model", DEFAULT_OLLAMA_MODEL)
+
+    # If the provided task isn't one of the known types, assume it's a model name and run all benchmarks
+    if task not in ("rag", "summarize", "all"):
+        logging.info(f"[benchmark] Unknown task '{task}', treating it as model name for full benchmark suite.")
+        model = task  # interpret the task value as a model name
+        task = "all"
+
+    results: dict[str, Any] = {}
+
+    # 1. Summarization benchmark
+    if task in ("summarize", "all"):
+        sum_cases = [
+            "Quantum computing uses quantum bits called qubits that can represent 0 and 1 simultaneously.",
+            "Large language models are trained on massive text corpora to predict the next word.",
+        ]
+        sum_out = []
+        for text in sum_cases:
+            start = time.time()
+            summary = await ollama_summarize(text)
+            latency = time.time() - start
+            # Compute compression ratio and ghostwire_score
+            ratio = len(summary.split()) / len(text.split()) if text.split() else 1.0
+            score = ghostwire_score(latency, 1.0 / max(1.0, ratio))
+            sum_out.append({"input": text, "summary": summary, "latency": latency, "ghostwire_score": score})
+        results["summarize"] = sum_out
+
+    # 2. RAG benchmark
+    if task in ("rag", "all"):
+        rag_cases = [
+            "What is superposition in quantum computing?",
+            "How does photosynthesis work in plants?",
+        ]
+        rag_out = []
+        for q in rag_cases:
+            start = time.time()
+            # Generate embedding for the query
+            embedding = await ollama_embed(q)
+            if not embedding:
+                rag_out.append({"question": q, "error": "Failed to generate embedding"})
+                continue
+            memories = query_similar_by_embedding(session_id, embedding, limit=5)
+            context = ""
+            if memories:
+                snippets = " | ".join(f"{p}" for p, _ in memories[:3])
+                context = f"Context: {snippets}\n\n"
+            prompt = f"{context}User question: {q}\n\nAnswer:"
+            resp_chunks = []
+            async for chunk in stream_from_ollama(prompt, model=model, local=True):
+                resp_chunks.append(chunk)
+            answer_text = "".join(resp_chunks)
+            latency = time.time() - start
+            score = ghostwire_score(latency)
+            rag_out.append({"question": q, "answer": answer_text, "latency": latency, "ghostwire_score": score})
+        results["rag"] = rag_out
+
+    # Compute overall average ghostwire_score
+    all_scores = []
+    for cat in results.values():
+        for case in cat:
+            if "ghostwire_score" in case:
+                all_scores.append(case["ghostwire_score"])
+    avg_score = round(sum(all_scores) / len(all_scores), 2) if all_scores else 0.0
+
+    # Log formatted console output for human-readability
+    for task_name in results:
+        logging.info(f"⚙️  {task_name.upper()} Benchmark Results")
+        for case in results[task_name]:
+            logging.info(f" • {case.get('question', case.get('input', ''))[:60]} → {case.get('ghostwire_score', 'N/A')} score | {case.get('latency', 0.0):.2f}s")
+    logging.info(f"Average GhostWire score: {avg_score}")
+
+    return {"status": "ok", "benchmarks": results, "avg_score": avg_score}

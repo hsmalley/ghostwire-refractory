@@ -84,14 +84,14 @@ uv run ghostwire
 ### Method 2: Direct execution with proper PYTHONPATH
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python python -m python.ghostwire.main
+PYTHONPATH=python python -m ghostwire.main
 ```
 
 ### Method 3: Using uv with PYTHONPATH
 From the project root:
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python uv run python -m python.ghostwire.main
+PYTHONPATH=python uv run python -m ghostwire.main
 ```
 
 The API will be available at `http://localhost:8000`
@@ -106,7 +106,7 @@ To use the operator console client:
 
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python/src python -m python.client.operator_console
+PYTHONPATH=python python -m python.client.operator_console
 ```
 
 ## Benchmarking
@@ -115,14 +115,14 @@ Run the benchmark suite:
 
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python/src python -m python.benchmarks.embedding_benchmarks
-PYTHONPATH=python/src python -m python.benchmarks.rag_benchmarks
-PYTHONPATH=python/src python -m python.benchmarks.summarization_benchmarks
+PYTHONPATH=python python -m python.benchmarks.embedding_benchmarks
+PYTHONPATH=python python -m python.benchmarks.rag_benchmarks
+PYTHONPATH=python python -m python.benchmarks.summarization_benchmarks
 ```
 
 Or run all benchmarks from the project root:
 ```bash
-export PYTHONPATH=python/src
+export PYTHONPATH=python
 python -m python.benchmarks.embedding_benchmarks
 python -m python.benchmarks.rag_benchmarks
 python -m python.benchmarks.summarization_benchmarks
@@ -134,13 +134,13 @@ Run the test suite:
 
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python/src python -m pytest python/tests/
+PYTHONPATH=python python -m pytest python/tests/
 ```
 
 Or with pytest discovery:
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python/src pytest python/tests/
+PYTHONPATH=python pytest python/tests/
 ```
 
 ## Dependencies

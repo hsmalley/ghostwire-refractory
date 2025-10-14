@@ -33,7 +33,8 @@ class SummarizationBenchmark:
             start_time = time.perf_counter()
             try:
                 # For now, we'll test using the chat completion endpoint
-                # In a full implementation, this would call a dedicated summarization endpoint
+                # In a full implementation, this would call a dedicated
+                # summarization endpoint
                 response = await self.client.post(
                     f"{self.controller_url}/api/v1/chat/chat_completion",
                     json={
@@ -58,9 +59,20 @@ class SummarizationBenchmark:
         print("=" * 60)
 
         test_texts = [
-            "Artificial intelligence (AI) is intelligence demonstrated by machines, in contrast to the natural intelligence displayed by humans and animals. Leading AI textbooks define the field as the study of 'intelligent agents': any device that perceives its environment and takes actions that maximize its chance of successfully achieving its goals.",
-            "Climate change refers to long-term shifts in global or regional climate patterns. Since the mid-20th century, scientists have observed unprecedented changes attributed to human influence on the climate system. The effects of climate change include rising sea levels, changing precipitation patterns, and an increase in extreme weather events.",
-            "The Internet of Things (IoT) refers to the network of physical objects—'things'—that are embedded with sensors, software, and other technologies for the purpose of connecting and exchanging data with other devices and systems over the internet. These objects range from ordinary household items to sophisticated industrial tools.",
+            "Artificial intelligence (AI) is intelligence demonstrated by machines, "
+            "in contrast to the natural intelligence displayed by humans and animals. "
+            "Leading AI textbooks define the field as the study of 'intelligent agents': "
+            "any device that perceives its environment and takes actions that maximize "
+            "its chance of successfully achieving its goals.",
+            "Climate change refers to long-term shifts in global or regional climate patterns. "
+            "Since the mid-20th century, scientists have observed unprecedented changes "
+            "attributed to human influence on the climate system. The effects of climate "
+            "change include rising sea levels, changing precipitation patterns, and an "
+            "increase in extreme weather events.",
+            "The Internet of Things (IoT) refers to the network of physical objects—'things'—"
+            "that are embedded with sensors, software, and other technologies for the purpose "
+            "of connecting and exchanging data with other devices and systems over the internet. "
+            "These objects range from ordinary household items to sophisticated industrial tools.",
         ]
 
         print("\n📝 Testing Summarization Performance...")

@@ -25,14 +25,9 @@ GhostWire Refractory is a neural lattice forged in neon, a chat system with memo
 
 To plug into the Ghostwire, you must first synchronize with its dependencies:
 
-```bash
-pip install -r requirements.txt
-```
-
-Or using uv:
 
 ```bash
-uv pip install -r requirements.txt
+uv sync
 ```
 
 ## 🚀 Running the Application
@@ -40,14 +35,13 @@ uv pip install -r requirements.txt
 To bring the Ghostwire to life, you can install it in development mode and summon the `ghostwire` daemon:
 
 ```bash
-pip install -e .
-ghostwire
+uv run python --with python.ghostwire
 ```
 
-Alternatively, you can run it directly through the Python module, setting the `PYTHONPATH` to the `python/src` directory:
+Alternatively, you can run it directly through the Python module, setting the `PYTHONPATH` to the `python/ghostwire` directory:
 
 ```bash
-PYTHONPATH=python/src python -m python.src.ghostwire.main
+PYTHONPATH=python/src python -m python.ghostwire.main
 ```
 
 The API will then be listening on `http://localhost:8000`, ready for your whispers.
@@ -57,7 +51,7 @@ The API will then be listening on `http://localhost:8000`, ready for your whispe
 The project uses `pytest` to verify the integrity of the lattice. To run the test suite, use the following command from the project root:
 
 ```bash
-PYTHONPATH=python/src pytest python/tests/
+uv run pytest python/tests/
 ```
 
 ## 🗺️ Key Files (The Sacred Scripture)

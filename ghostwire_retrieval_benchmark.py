@@ -40,7 +40,9 @@ except ImportError:
     from langchain_community.embeddings import OpenAIEmbeddings
 from langchain_community.vectorstores import Qdrant
 
-CONTROLLER_URL = "http://localhost:8000/v1"
+import os
+
+CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000") + "/v1"
 
 DOCS = [
     Document(page_content="Quantum computers exploit superposition and entanglement."),

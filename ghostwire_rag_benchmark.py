@@ -5,7 +5,9 @@ from typing import List, Tuple
 
 import httpx
 
-CONTROLLER_URL = "http://localhost:8000"
+import os
+
+CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000")
 EMBED_ROUTE = "/v1/embeddings"
 CHAT_ROUTE = "/chat_embedding"
 RETRIEVE_ROUTE = "/retrieve"

@@ -7,7 +7,9 @@ import httpx
 import numpy as np
 from rouge_score import rouge_scorer
 
-CONTROLLER_URL = "http://localhost:8000"
+import os
+
+CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000")
 CHAT_ROUTE = (
     "/chat_completion"  # or "/chat_embedding" if that’s what your summarizer uses
 )

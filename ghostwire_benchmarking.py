@@ -10,8 +10,10 @@ import psutil
 # python ghostwire-benchmarking.py --controller http://localhost:8000 --repeat 1000000
 # python ghostwire-benchmarking.py --controller http://localhost:8000 --threads 16 --repeat 100
 
+import os
+
 OLLAMA_URL = "http://localhost:11434"
-CONTROLLER_URL = "http://localhost:8000"
+CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000")
 MODELS = [
     "embeddinggemma",
     "granite-embedding",
@@ -243,7 +245,7 @@ async def run_concurrent_benchmark(num_threads: int, repeat: int):
 # =========================
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--controller", type=str, default="http://localhost:8000")
+    parser.add_argument("--controller", type=str, default=CONTROLLER_URL)
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--threads", type=int, default=1)
     args = parser.parse_args()

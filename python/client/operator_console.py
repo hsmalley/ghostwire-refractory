@@ -9,8 +9,10 @@ from typing import Any
 
 import httpx
 
-# Add the python/src directory to the path to access ghostwire modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Add the python directory to the path to access ghostwire modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from python.ghostwire.config.settings import settings
 
 
 class OperatorConsoleClient:

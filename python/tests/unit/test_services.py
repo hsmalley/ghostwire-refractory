@@ -5,12 +5,12 @@ Unit tests for GhostWire Refractory - Services
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from unittest.mock import MagicMock, patch
 
-from python.src.ghostwire.models.memory import MemoryCreate
-from python.src.ghostwire.services.memory_service import MemoryService
+from python.ghostwire.models.memory import MemoryCreate
+from python.ghostwire.services.memory_service import MemoryService
 
 
 class TestMemoryService:
@@ -18,8 +18,8 @@ class TestMemoryService:
         """Setup method to create a memory service instance for each test"""
         self.service = MemoryService()
 
-    @patch("src.ghostwire.database.repositories.MemoryRepository.create_memory")
-    @patch("src.ghostwire.vector.hnsw_index.get_hnsw_manager")
+    @patch("python.ghostwire.database.repositories.MemoryRepository.create_memory")
+    @patch("python.ghostwire.vector.hnsw_index.get_hnsw_manager")
     def test_create_memory(self, mock_get_hnsw_manager, mock_create_memory):
         """Test creating a memory entry"""
         # Mock the HNSW manager
@@ -52,9 +52,9 @@ class TestMemoryService:
         mock_hnsw_manager.add_items.assert_called_once()
 
     @patch(
-        "src.ghostwire.database.repositories.MemoryRepository.query_similar_by_embedding"
+        "python.ghostwire.database.repositories.MemoryRepository.query_similar_by_embedding"
     )
-    @patch("src.ghostwire.vector.hnsw_index.get_hnsw_manager")
+    @patch("python.ghostwire.vector.hnsw_index.get_hnsw_manager")
     def test_query_similar_memories(self, mock_get_hnsw_manager, mock_query_db):
         """Test querying similar memories"""
         # Mock the HNSW manager
@@ -75,7 +75,7 @@ class TestMemoryService:
         mock_query_db.return_value = [mock_memory]
 
         # Query similar memories
-        from src.ghostwire.models.memory import MemoryQuery
+        from python.ghostwire.models.memory import MemoryQuery
 
         query = MemoryQuery(
             session_id="test_session",

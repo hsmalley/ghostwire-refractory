@@ -1,7 +1,17 @@
-*
+# Ignore stuff that doesn't matter
 !.gitignore
+*
+
+# Include the theme
 !GHOSTWIRE_THEME.md
 !GHOSTWIRE_FLAVOR.md
+
+# Include AI Agents
+!AGENTS.md
+!QWEN.md
+!GEMINI.md
+
+#Include Github
 !workflows/
 !dependabot.yml
 !ISSUE_TEMPLATE

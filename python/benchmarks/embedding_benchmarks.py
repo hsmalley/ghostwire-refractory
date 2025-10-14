@@ -11,10 +11,10 @@ import time
 import httpx
 import psutil
 
-# Add the python/src directory to the path to access ghostwire modules
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+# Add the python directory to the path to access ghostwire modules
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from python.src.ghostwire.config.settings import settings
+from python.ghostwire.config.settings import settings
 
 
 class BenchmarkRunner:

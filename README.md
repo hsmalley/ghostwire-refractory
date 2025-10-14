@@ -17,7 +17,7 @@ The application is organized in a modular structure:
 
 ```
 python/
-├── src/ghostwire/   # Main application modules
+├── ghostwire/       # Main application modules
 │   ├── config/      # Configuration and settings
 │   ├── database/    # Database connection and repositories  
 │   ├── models/      # Pydantic models
@@ -37,14 +37,14 @@ python/
 1. Clone the repository
 2. Install dependencies (requires Python 3.12+):
 
+Using pip (requires build tools for hnswlib):
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
-Or using uv:
-
+Or using uv (recommended):
 ```bash
-uv pip install -r requirements.txt
+uv pip install -e .
 ```
 
 ## Configuration
@@ -84,14 +84,14 @@ uv run ghostwire
 ### Method 2: Direct execution with proper PYTHONPATH
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python/src python -m python.src.ghostwire.main
+PYTHONPATH=python python -m python.ghostwire.main
 ```
 
 ### Method 3: Using uv with PYTHONPATH
 From the project root:
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python/src uv run python -m python.src.ghostwire.main
+PYTHONPATH=python uv run python -m python.ghostwire.main
 ```
 
 The API will be available at `http://localhost:8000`

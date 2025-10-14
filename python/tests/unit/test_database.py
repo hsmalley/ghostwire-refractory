@@ -6,9 +6,9 @@ import os
 import sqlite3
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from python.src.ghostwire.database.connection import ConnectionPool, get_db_connection
+from python.ghostwire.database.connection import ConnectionPool, get_db_connection
 
 
 class TestConnectionPool:

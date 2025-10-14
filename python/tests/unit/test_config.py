@@ -5,11 +5,11 @@ Unit tests for GhostWire Refractory - Configuration
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from unittest.mock import patch
 
-from python.src.ghostwire.config.settings import Settings
+from python.ghostwire.config.settings import Settings
 
 
 def test_settings_defaults():

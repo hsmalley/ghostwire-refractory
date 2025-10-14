@@ -64,6 +64,9 @@ EMBED_MODELS = os.getenv(
 if not DEBUG_MODE:
     logging.getLogger("httpx").setLevel(logging.WARNING)
 
+logging.info(f"REMOTE_OLLAMA_URL = {REMOTE_OLLAMA_URL}")
+logging.info(f"OLLAMA_URL = {OLLAMA_URL}")
+
 
 async def stream_from_ollama(
     prompt: str, model: str = DEFAULT_OLLAMA_MODEL, local: bool = False
@@ -765,7 +768,12 @@ async def chat_completion(req: ChatCompletionRequest):
 
     # Select remote/local based on model name
     use_remote = model.startswith("remote-") or model.endswith(":remote")
-    clean_model = model.removeprefix("remote-").removesuffix(":remote")
+    clean_model = (
+        model.removeprefix("remote-")
+        .removeprefix("local-")
+        .removesuffix(":remote")
+        .removesuffix(":local")
+    )
 
     logging.info(
         f"[chat_completion] Starting summarization with {model} (remote={use_remote})"
@@ -1018,7 +1026,12 @@ async def v1_chat_completions(req: Request):
 
         # Select remote/local based on model name
         use_remote = model.startswith("remote-") or model.endswith(":remote")
-        clean_model = model.removeprefix("remote-").removesuffix(":remote")
+        clean_model = (
+            model.removeprefix("remote-")
+            .removeprefix("local-")
+            .removesuffix(":remote")
+            .removesuffix(":local")
+        )
 
         # Only single stop supported, if at all
         # Streaming mode
@@ -1457,6 +1470,190 @@ async def q_get_point(collection_name: str, point_id: str):
 # ----------------------------------------
 
 
+# -------------------------------
+# Ollama-compatible endpoints
+# -------------------------------
+
+from fastapi import Body
+
+
+@app.post("/api/generate")
+async def api_generate(body: dict = Body(...)):
+    """
+    Ollama‑compatible /api/generate endpoint.
+    Accepts: {"model": str, "prompt": str, "stream": bool, "suffix"? …}
+    """
+    model = body.get("model", DEFAULT_OLLAMA_MODEL)
+    prompt = body.get("prompt", "")
+    stream = body.get("stream", True)
+    suffix = body.get("suffix")
+    options = body.get("options", {})
+
+    # Decide remote/local routing
+    use_remote = model.startswith("remote-") or model.endswith(":remote")
+    clean_model = (
+        model.removeprefix("remote-")
+        .removeprefix("local-")
+        .removesuffix(":remote")
+        .removesuffix(":local")
+    )
+
+    if stream:
+
+        async def gen_stream():
+            async for chunk in stream_from_ollama(
+                prompt, model=clean_model, local=not use_remote
+            ):
+                obj = {
+                    "model": model,
+                    "response": chunk,
+                    "done": False,
+                    "done_reason": None,
+                }
+                yield json.dumps(obj) + "\n"
+            done_obj = {
+                "model": model,
+                "response": "",
+                "done": True,
+                "done_reason": "stop",
+            }
+            yield json.dumps(done_obj) + "\n"
+
+        return StreamingResponse(gen_stream(), media_type="application/json")
+    else:
+        text = ""
+        async for chunk in stream_from_ollama(
+            prompt, model=clean_model, local=not use_remote
+        ):
+            text += chunk
+        return {
+            "model": model,
+            "response": text,
+            "done": True,
+            "done_reason": "stop",
+        }
+
+
+@app.post("/api/chat")
+async def api_chat(body: dict = Body(...)):
+    """
+    Ollama‑compatible /api/chat endpoint.
+    Accepts: {"model": str, "messages": [...], "stream": bool, "options", "format", etc.}
+    """
+    model = body.get("model", DEFAULT_OLLAMA_MODEL)
+    messages = body.get("messages", [])
+    stream = body.get("stream", True)
+    options = body.get("options", {})
+
+    # Flatten messages into a single prompt text
+    prompt = "\n".join(str(m.get("content", "")) for m in messages)
+
+    # Decide remote/local routing
+    use_remote = model.startswith("remote-") or model.endswith(":remote")
+    clean_model = (
+        model.removeprefix("remote-")
+        .removeprefix("local-")
+        .removesuffix(":remote")
+        .removesuffix(":local")
+    )
+
+    if stream:
+
+        async def chat_stream():
+            async for chunk in stream_from_ollama(
+                prompt, model=clean_model, local=not use_remote
+            ):
+                obj = {
+                    "model": model,
+                    "message": {"role": "assistant", "content": chunk},
+                    "done": False,
+                }
+                yield json.dumps(obj) + "\n"
+            done_obj = {
+                "model": model,
+                "message": {"role": "assistant", "content": ""},
+                "done": True,
+                "done_reason": "stop",
+            }
+            yield json.dumps(done_obj) + "\n"
+
+        return StreamingResponse(chat_stream(), media_type="application/json")
+    else:
+        text = ""
+        async for chunk in stream_from_ollama(
+            prompt, model=clean_model, local=not use_remote
+        ):
+            text += chunk
+        return {
+            "model": model,
+            "message": {"role": "assistant", "content": text},
+            "done": True,
+            "done_reason": "stop",
+        }
+
+
+@app.get("/api/tags")
+async def api_tags_alias():
+    """Alias for Ollama-compatible /api/tags, proxies to api_list_models."""
+    return await api_list_models()
+
+
+@app.get("/api/list")
+async def api_list_models():
+    """List models from both local and remote Ollama servers, using only /api/tags for compatibility."""
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        models = []
+        # Local models
+        try:
+            resp = await client.get(f"{OLLAMA_URL}/api/tags")
+            resp.raise_for_status()
+            j = resp.json()
+            for m in j.get("models", []):
+                models.append(f"local-{m.get('name')}")
+        except Exception as e:
+            logging.warning(f"[api_list_models] Local /api/tags failed: {e}")
+        # Remote models
+        try:
+            resp = await client.get(f"{REMOTE_OLLAMA_URL}/api/tags")
+            resp.raise_for_status()
+            j = resp.json()
+            for m in j.get("models", []):
+                models.append(f"remote-{m.get('name')}")
+        except Exception as e:
+            logging.warning(f"[api_list_models] Remote /api/tags failed: {e}")
+    return {"models": models}
+
+
+@app.post("/api/pull")
+async def api_pull(body: dict = Body(...)):
+    """Ollama-compatible /api/pull proxy."""
+    model = body.get("model")
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            resp = await client.post(
+                f"{REMOTE_OLLAMA_URL}/api/pull", json={"model": model}
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Pull failed: {e}")
+
+
+@app.post("/api/delete")
+async def api_delete(body: dict = Body(...)):
+    """Ollama-compatible /api/delete proxy."""
+    model = body.get("model")
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        try:
+            resp = await client.post(
+                f"{REMOTE_OLLAMA_URL}/api/delete", json={"model": model}
+            )
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Delete failed: {e}")
+
+
 # Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}
 @app.post("/collections/{collection_name}/points/delete")
 async def qdrant_delete_points(
@@ -1604,11 +1801,6 @@ async def q_delete_points_debug_all(
     return {"status": "ok", "result": {"deleted": 0, "ids": []}}
 
 
-# -------------------------------
-# Graceful shutdown
-# -------------------------------
-
-
 def _close_global_conn():
     global _global_conn, _hnsw_index
     # Save HNSW index before closing DB
@@ -1733,7 +1925,12 @@ async def rag_endpoint(payload: dict):
     prompt = f"{context}User question: {text}\n\nAnswer:"
     # Select remote/local based on model name
     use_remote = model.startswith("remote-") or model.endswith(":remote")
-    clean_model = model.removeprefix("remote-").removesuffix(":remote")
+    clean_model = (
+        model.removeprefix("remote-")
+        .removeprefix("local-")
+        .removesuffix(":remote")
+        .removesuffix(":local")
+    )
 
     async def stream_response():
         try:
@@ -1793,7 +1990,12 @@ async def benchmark_endpoint(payload: dict):
         sum_out = []
         # Select remote/local for summarization
         use_remote = model.startswith("remote-") or model.endswith(":remote")
-        clean_model = model.removeprefix("remote-").removesuffix(":remote")
+        clean_model = (
+            model.removeprefix("remote-")
+            .removeprefix("local-")
+            .removesuffix(":remote")
+            .removesuffix(":local")
+        )
         for text in sum_cases:
             start = time.time()
             # If using remote, call stream_from_ollama directly; else ollama_summarize
@@ -1834,7 +2036,12 @@ async def benchmark_endpoint(payload: dict):
         ]
         rag_out = []
         use_remote = model.startswith("remote-") or model.endswith(":remote")
-        clean_model = model.removeprefix("remote-").removesuffix(":remote")
+        clean_model = (
+            model.removeprefix("remote-")
+            .removeprefix("local-")
+            .removesuffix(":remote")
+            .removesuffix(":local")
+        )
         for q in rag_cases:
             start = time.time()
             # Generate embedding for the query

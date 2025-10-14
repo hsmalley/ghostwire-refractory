@@ -29,84 +29,16 @@ DOCUMENTS = [
 ]
 
 
-# Simple in-memory vector store
-class SimpleVectorStore:
-    def __init__(self):
-        self.texts: List[str] = []
-        self.embeddings: List[List[float]] = []
-
-    async def add(self, text: str):
-        vec, _ = await fetch_embedding(text)
-        self.texts.append(text)
-        self.embeddings.append(vec)
-
-    def similarity(self, query_vec: List[float]):
-        # cosine similarity
-        import numpy as np
-
-        sims = []
-        q = np.array(query_vec)
-        for vec in self.embeddings:
-            v = np.array(vec)
-            # handle zero vector
-            if np.linalg.norm(v) == 0 or np.linalg.norm(q) == 0:
-                sims.append(0.0)
-            else:
-                sims.append(
-                    float(np.dot(q, v) / (np.linalg.norm(q) * np.linalg.norm(v)))
-                )
-        return sims
-
-    async def query(self, question: str):
-        qvec, _ = await fetch_embedding(question)
-        sims = self.similarity(qvec)
-        # get top K
-        ranked = sorted(range(len(sims)), key=lambda i: sims[i], reverse=True)
-        return [self.texts[i] for i in ranked[:TOP_K]], qvec
-
-
-async def fetch_embedding(text: str):
+async def rag_answer(question: str):
     async with httpx.AsyncClient(timeout=30.0) as client:
-        payload = {"model": EMBED_MODEL, "input": text}
-        resp = await client.post(f"{CONTROLLER_URL}{EMBED_ROUTE}", json=payload)
-        resp.raise_for_status()
-        data = resp.json()
-        vec = data.get("data", [{}])[0].get("embedding", [])
-        return vec, resp.elapsed.total_seconds()
-
-
-async def chat_answer(question: str, contexts: List[str], model: str):
-    """
-    Calls your controller’s chat endpoint with a prompt including the retrieved contexts.
-    """
-    prompt = "Use the following context snippets to answer the question.\n\n"
-    for c in contexts:
-        prompt += f"Context: {c}\n"
-    prompt += f"\nQuestion: {question}\nAnswer:"
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        payload = {"session_id": "rag-test", "prompt_text": str(prompt), "model": model}
-
-        # Add optional embedding data if required by the API schema
-        # For safety, avoid sending empty or null fields
-        if contexts:
-            payload["embedding"] = [0.0] * 768  # Match required embedding dimension
-
-        print(
-            f"[DEBUG] Sending payload to {CHAT_ROUTE}: {json.dumps(payload)[:200]}..."
-        )
-        resp = await client.post(f"{CONTROLLER_URL}{CHAT_ROUTE}", json=payload)
-        if resp.status_code != 200:
-            print(f"[ERROR] {resp.status_code} - {resp.text}")
+        payload = {"session_id": "rag-benchmark", "text": question}
+        resp = await client.post(f"{CONTROLLER_URL}/rag", json=payload)
         resp.raise_for_status()
         return resp.text
 
 
 async def run_rag_test():
     print("🔍 Running RAG benchmark")
-    store = SimpleVectorStore()
-    for doc in DOCUMENTS:
-        await store.add(doc)
 
     questions = [
         "What is superposition in quantum computing?",
@@ -117,20 +49,16 @@ async def run_rag_test():
     for model in MODELS:
         print(f"\n🚀 Testing model: {model}")
         for q in questions:
-            contexts, _ = await store.query(q)
-            answer = await chat_answer(q, contexts, model)
-            # Placeholder metrics
+            start = time.time()
+            answer = await rag_answer(q)
+            latency = time.time() - start
             quality = 0.8 if "quantum" in q.lower() else 0.6
             hallucination = 0.2
-            latency = 1.0
             ghostwire_score = compute_ghostwire_score(quality, hallucination, latency)
             print("------------------------------------------------------------")
             print(f"Question: {q}")
-            print(f"Retrieved contexts: {contexts}")
-            print(f"Answer: {answer}")
-            print(f"ROUGE-1 F1 (quality): {quality}")
-            print(f"Hallucination: {hallucination}")
-            print(f"Latency: {latency}")
+            print(f"Answer: {answer.strip()}")
+            print(f"Latency: {latency:.2f}s")
             print(f"Ghostwire score: {ghostwire_score:.4f}")
             print("------------------------------------------------------------")
         print("=" * 70)

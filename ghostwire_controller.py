@@ -250,21 +250,103 @@ def _ensure_tables(conn: sqlite3.Connection) -> None:
 # -------------------------------
 
 
+# ---------------------------------------------
+# Embedding model cache for ollama_embed
+# ---------------------------------------------
+
+# Global variable for embedding model cache
+_cached_embed_model: str | None = None
+
 async def ollama_embed(text: str) -> list[float]:
-    """Use local Ollama for embedding text."""
-    logging.info("[ollama_embed] Using local Ollama /api/embeddings endpoint.")
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(
-                f"{OLLAMA_URL}/api/embeddings",
-                json={"model": "embeddinggemma", "input": text},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("embedding", [])
-    except Exception as e:
-        logging.error(f"[ollama_embed] Failed to generate embedding: {e}")
-        return []
+    """Use local Ollama for embedding text, trying both /api/embeddings and /api/embed endpoints for each model."""
+    global _cached_embed_model
+    import json as _json  # for logging response JSON
+    candidate_models = [
+        "embeddinggemma",
+        "granite-embedding",
+        "nomic-embed-text",
+        "mxbai-embed-large",
+        "snowflake-arctic-embed",
+        "all-minilm",
+    ]
+    # If we have a cached model, try it first and only
+    if _cached_embed_model:
+        logging.info(f"[ollama_embed] Using cached embedding model: '{_cached_embed_model}'")
+        candidate_models = [_cached_embed_model]
+    last_error = None
+
+    for model_name in candidate_models:
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                # First try /api/embeddings
+                logging.info(f"[ollama_embed] Trying /api/embeddings for model '{model_name}'...")
+                resp = await client.post(
+                    f"{OLLAMA_URL}/api/embeddings",
+                    json={"model": model_name, "input": text},
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                emb = data.get("embedding") or data.get("data", [{}])[0].get("embedding")
+                # NEW: Check for "embeddings" (plural) at root if not found
+                if not emb and "embeddings" in data and isinstance(data["embeddings"], list) and data["embeddings"]:
+                    emb = data["embeddings"][0]
+                    logging.info(f"[ollama_embed] Found embedding under 'embeddings' key for model '{model_name}'")
+                if emb:
+                    logging.info(f"[ollama_embed] Success with model '{model_name}' using /api/embeddings endpoint.")
+                    if _cached_embed_model != model_name:
+                        _cached_embed_model = model_name
+                        logging.info(f"[ollama_embed] Caching embedding model: '{model_name}' for future use.")
+                    return emb
+                # Log diagnostic info for /api/embeddings
+                if "error" in data or "message" in data:
+                    logging.warning(
+                        f"[ollama_embed] /api/embeddings model '{model_name}' returned error: {data.get('error') or data.get('message')}"
+                    )
+                else:
+                    logging.warning(
+                        f"[ollama_embed] No embedding in /api/embeddings response for model '{model_name}'. "
+                        f"Response JSON: {_json.dumps(data)[:500]}"
+                    )
+                # Now try /api/embed as fallback
+                logging.info(f"[ollama_embed] Trying /api/embed fallback for model '{model_name}'...")
+                resp2 = await client.post(
+                    f"{OLLAMA_URL}/api/embed",
+                    json={"model": model_name, "input": text},
+                )
+                resp2.raise_for_status()
+                data2 = resp2.json()
+                emb2 = data2.get("embedding") or data2.get("data", [{}])[0].get("embedding")
+                # NEW: Check for "embeddings" (plural) at root if not found
+                if not emb2 and "embeddings" in data2 and isinstance(data2["embeddings"], list) and data2["embeddings"]:
+                    emb2 = data2["embeddings"][0]
+                    logging.info(f"[ollama_embed] Found embedding under 'embeddings' key for model '{model_name}'")
+                if emb2:
+                    logging.info(f"[ollama_embed] Success with model '{model_name}' using /api/embed endpoint.")
+                    if _cached_embed_model != model_name:
+                        _cached_embed_model = model_name
+                        logging.info(f"[ollama_embed] Caching embedding model: '{model_name}' for future use.")
+                    return emb2
+                # Log diagnostic info for /api/embed
+                if "error" in data2 or "message" in data2:
+                    logging.warning(
+                        f"[ollama_embed] /api/embed model '{model_name}' returned error: {data2.get('error') or data2.get('message')}"
+                    )
+                else:
+                    logging.warning(
+                        f"[ollama_embed] No embedding in /api/embed response for model '{model_name}'. "
+                        f"Response JSON: {_json.dumps(data2)[:500]}"
+                    )
+        except Exception as e:
+            last_error = e
+            logging.warning(f"[ollama_embed] Model '{model_name}' failed: {e}")
+            # If this was the cached model, clear cache so we try all on next call
+            if _cached_embed_model == model_name:
+                logging.info(f"[ollama_embed] Cached embedding model '{model_name}' failed. Clearing cache for fallback.")
+                _cached_embed_model = None
+            continue
+
+    logging.error(f"[ollama_embed] All embedding models failed. Last error: {last_error}")
+    return []
 
 
 async def ollama_summarize(text: str) -> str:
@@ -1121,6 +1203,7 @@ if __name__ == "__main__":
     # Run with direct app object to avoid hyphen module import issues
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
 
+
 # -------------------------------
 # Summarization endpoint
 # -------------------------------
@@ -1135,3 +1218,40 @@ async def summarize_endpoint(payload: dict):
     summary = await ollama_summarize(text)
     emb = await ollama_embed(summary)
     return {"status": "ok", "result": {"summary": summary, "embedding": emb}}
+
+
+# -------------------------------
+# RAG benchmark endpoint
+# -------------------------------
+
+
+@app.post("/rag")
+async def rag_endpoint(payload: dict):
+    """RAG endpoint: embed query, recall similar memory, and stream augmented answer."""
+    session_id = payload.get("session_id", "default_session")
+    text = payload.get("text")
+    if not text:
+        raise HTTPException(status_code=422, detail="Missing text for RAG")
+
+    # Generate embedding for the query
+    embedding = await ollama_embed(text)
+    if not embedding:
+        raise HTTPException(status_code=500, detail="Failed to generate embedding")
+
+    # Retrieve context
+    memories = query_similar_by_embedding(session_id, embedding, limit=5)
+    context = ""
+    if memories:
+        snippets = " | ".join(f"{p}" for p, _ in memories[:3])
+        context = f"Context: {snippets}\n\n"
+
+    prompt = f"{context}User question: {text}\n\nAnswer:"
+
+    async def stream_response():
+        try:
+            async for chunk in stream_from_ollama(prompt, model=DEFAULT_OLLAMA_MODEL, local=True):
+                yield chunk
+        except Exception as e:
+            yield f"[ERROR] {e}"
+
+    return StreamingResponse(stream_response(), media_type="text/plain")

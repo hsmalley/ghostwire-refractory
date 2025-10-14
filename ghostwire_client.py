@@ -24,12 +24,16 @@ LOCAL_OLLAMA = os.getenv(
 CONTROLLER_URL = os.getenv(
     "CONTROLLER_URL", "http://127.0.0.1:8000"
 )  # Controller API endpoint (FastAPI)
-EMBED_MODEL = os.getenv("EMBED_MODEL", "nomic-embed-text")  # Local embedding model
+EMBED_MODEL = os.getenv("EMBED_MODEL", "embeddinggemma")  # Local embedding model
 EMBED_DIM = int(os.getenv("EMBED_DIM", "768"))
+
+SUMMARIZER_URL = os.getenv("SUMMARIZER_URL", f"{CONTROLLER_URL}/summarization_benchmark")
+RAG_URL = os.getenv("RAG_URL", f"{CONTROLLER_URL}/rag")
+BENCH_URL = os.getenv("BENCH_URL", f"{CONTROLLER_URL}/benchmark_suite")
 
 
 async def embed_text(text: str):
-    """Generate an embedding vector locally using Ollama (nomic-embed-text by default)."""
+    """Generate an embedding vector locally using Ollama (embeddinggemma by default)."""
     client = AsyncClient(host=LOCAL_OLLAMA)
     resp = await client.embeddings(model=EMBED_MODEL, prompt=text)
     embedding = resp.get("embedding") or resp.get("embeddings")
@@ -46,42 +50,125 @@ async def embed_text(text: str):
     return embedding
 
 
-async def send_message(session_id: str, text: str):
-    """Send the utterance + embedding to the controller and stream the reply."""
-    embedding = await embed_text(text)
-
+async def post_json(url, payload):
+    """Send JSON payload to URL using a shared AsyncClient and print streamed or JSON responses."""
     async with httpx.AsyncClient(timeout=None) as client:
-        async with client.stream(
-            "POST",
-            f"{CONTROLLER_URL}/chat_embedding",
-            json={
-                "session_id": session_id,
-                "prompt_text": text,
-                "embedding": embedding,
-            },
-        ) as resp:
-            resp.raise_for_status()
-            async for chunk in resp.aiter_text():
-                print(chunk, end="", flush=True)
-    print("\n", end="")
+        try:
+            async with client.stream("POST", url, json=payload) as resp:
+                resp.raise_for_status()
+                # Try streaming text chunks if possible
+                async for chunk in resp.aiter_text():
+                    print(chunk, end="", flush=True)
+                print()
+        except httpx.HTTPStatusError as e:
+            try:
+                content = await e.response.aread()
+                body = content.decode(errors='ignore')
+            except Exception:
+                body = "<stream closed>"
+            print(f"HTTP error {e.response.status_code}: {body}")
+        except Exception as e:
+            print(f"Error: {e}")
+
+
+async def run_chat(session_id, text):
+    """Run chat embedding command."""
+    embedding = await embed_text(text)
+    payload = {
+        "session_id": session_id,
+        "prompt_text": text,
+        "embedding": embedding,
+    }
+    print(f"🗨️ Chat response:")
+    await post_json(f"{CONTROLLER_URL}/chat_embedding", payload)
+
+
+async def run_summarization(session_id, text):
+    """Run summarization benchmark command."""
+    payload = {
+        "session_id": session_id,
+        "text": text,
+    }
+    print(f"📝 Summarization benchmark response:")
+    await post_json(SUMMARIZER_URL, payload)
+
+
+async def run_rag(session_id, text):
+    """Run RAG benchmark command."""
+    payload = {
+        "session_id": session_id,
+        "text": text,
+    }
+    print(f"📚 RAG benchmark response:")
+    await post_json(RAG_URL, payload)
+
+
+async def run_benchmark(session_id, model):
+    """Run benchmark suite command."""
+    payload = {
+        "session_id": session_id,
+        "model": model,
+    }
+    print(f"⚙️ Benchmark suite response:")
+    await post_json(BENCH_URL, payload)
 
 
 async def repl():
-    """Interactive REPL: type to commune; Ctrl+C to jack out."""
+    """Interactive REPL: type commands to commune; Ctrl+C to jack out."""
     session_id = "repl_session"
-    print(f"Connected to ghostwire controller at {CONTROLLER_URL}/chat_embedding")
-    print("Type your messages below. Type 'exit' or press Ctrl+C to quit.\n")
+    print(f"Connected to ghostwire controller at {CONTROLLER_URL}")
+    print("GhostWire Operator Console")
+    print("---------------------------")
+    print("Available commands:")
+    print("  /chat <text>         - Chat with embeddings")
+    print("  /summarize <text>    - Run summarization benchmark")
+    print("  /rag <text>          - Run RAG benchmark")
+    print("  /bench <model>       - Run benchmark suite for specified model")
+    print("  /exit                - Exit the console")
+    print("Type your messages or commands below.\n")
 
     while True:
         try:
-            text = input("You: ").strip()
-            if not text or text.lower() in {"exit", "quit"}:
+            line = input("GhostWire> ").strip()
+            if not line:
+                continue
+            if line.lower() in {"/exit", "exit", "quit"}:
                 print("Exiting REPL.")
                 break
-            await send_message(session_id, text)
+            if line.startswith("/summarize "):
+                text = line[len("/summarize ") :].strip()
+                if not text:
+                    print("Please provide text to summarize.")
+                    continue
+                await run_summarization(session_id, text)
+            elif line.startswith("/rag "):
+                text = line[len("/rag ") :].strip()
+                if not text:
+                    print("Please provide text for RAG benchmark.")
+                    continue
+                await run_rag(session_id, text)
+            elif line.startswith("/bench "):
+                model = line[len("/bench ") :].strip()
+                if not model:
+                    print("Please provide a model name for benchmarking.")
+                    continue
+                await run_benchmark(session_id, model)
+            elif line.startswith("/chat "):
+                text = line[len("/chat ") :].strip()
+                if not text:
+                    print("Please provide text to chat.")
+                    continue
+                await run_chat(session_id, text)
+            elif line.startswith("/"):
+                print(f"Unknown command: {line}")
+            else:
+                # Default to chat embedding for plain text input
+                await run_chat(session_id, line)
         except (EOFError, KeyboardInterrupt):
             print("\nExiting REPL.")
             break
+
+    print("🧩 Session closed. The wire grows silent.")
 
 
 if __name__ == "__main__":

@@ -16,7 +16,7 @@ Use it to experiment with "memory" for conversational apps: each turn is embedde
 - The API stores the pair `(prompt_text, answer_text, embedding)` in `memory.db` for future recall.
 
 **What You Need**
-- Python 3.8+
+- Python 3.12+
 - Ollama installed
   - Local Ollama for embeddings (pull an embedding model, e.g. `nomic-embed-text`).
   - An Ollama text model for generation (can be the same machine). Example: `llama3.2`.

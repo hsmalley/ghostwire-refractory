@@ -35,7 +35,7 @@ python/
 ## Installation
 
 1. Clone the repository
-2. Install dependencies (requires Python 3.8+):
+2. Install dependencies (requires Python 3.12+):
 
 ```bash
 pip install -r requirements.txt
@@ -69,14 +69,14 @@ ALLOWED_ORIGINS=["http://localhost:3000", "http://localhost:8000"]
 ## Running the Application
 
 ```bash
-cd src/ghostwire
+cd python/src/ghostwire
 python main.py
 ```
 
 Or with uv:
 
 ```bash
-uv run python -m src.ghostwire.main
+uv run python -m python.src.ghostwire.main
 ```
 
 The API will be available at `http://localhost:8000`
@@ -90,7 +90,8 @@ See [APIDOC.md](APIDOC.md) for detailed API documentation.
 To use the operator console client:
 
 ```bash
-python -m client.operator_console
+cd python/client
+python operator_console.py
 ```
 
 ## Benchmarking
@@ -98,9 +99,10 @@ python -m client.operator_console
 Run the benchmark suite:
 
 ```bash
-python -m benchmarks.embedding_benchmarks
-python -m benchmarks.rag_benchmarks
-python -m benchmarks.summarization_benchmarks
+cd python/benchmarks
+python embedding_benchmarks.py
+python rag_benchmarks.py
+python summarization_benchmarks.py
 ```
 
 ## Testing
@@ -108,13 +110,14 @@ python -m benchmarks.summarization_benchmarks
 Run the test suite:
 
 ```bash
-pytest
+cd python/tests
+python -m pytest
 ```
 
 ## Dependencies
 
 The application requires:
-- Python 3.8+
+- Python 3.12+
 - FastAPI
 - SQLite with APSW
 - hnswlib for vector indexing

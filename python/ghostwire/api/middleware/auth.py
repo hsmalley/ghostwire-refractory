@@ -1,7 +1,8 @@
-# ⚡️ Auth Middleware
-
-GhostWire’s oracle that validates credentials and issues JWTs. Every request must present a bearer token issued by `AuthService`. Secrets are kept in `SECRET_KEY` and are signed with the configured algorithm.
-
+"""
+GhostWire’s oracle that validates credentials and issues JWTs.
+Every request must present a bearer token issued by `AuthService`.
+Secrets are kept in `SECRET_KEY` and are signed with the configured algorithm.
+"""
 
 import secrets
 from datetime import datetime, timedelta

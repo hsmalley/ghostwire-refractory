@@ -101,9 +101,11 @@ class PatchEngine:
         # Create backup if requested
         if backup:
             backup_path = file_path.with_suffix(file_path.suffix + ".bak")
-            with open(file_path, encoding="utf-8") as original:
-                with open(backup_path, "w", encoding="utf-8") as backup_file:
-                    backup_file.write(original.read())
+            with (
+                open(file_path, encoding="utf-8") as original,
+                open(backup_path, "w", encoding="utf-8") as backup_file,
+            ):
+                backup_file.write(original.read())
 
         # Write new content to file
         with open(file_path, "w", encoding="utf-8") as f:

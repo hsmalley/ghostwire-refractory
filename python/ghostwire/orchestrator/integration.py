@@ -136,9 +136,6 @@ class MergeEngine:
             )
 
             # Check for conflicts with HEAD (current state)
-            current_content = (
-                base_content  # In this simplified version, base is current
-            )
             has_conflict = self._detect_conflicts(base_content, shadow_content)
 
             if has_conflict:
@@ -230,24 +227,25 @@ class MergeEngine:
                         idx = int(final_part)
                         if idx < len(target):
                             target[idx] = patch_proposal.change
-            elif patch_proposal.type == "delete":
+            elif patch_proposal.type == "delete" and patch_proposal.pointer.startswith(
+                "/"
+            ):
                 # Delete content at pointer
-                if patch_proposal.pointer.startswith("/"):
-                    path_parts = [
-                        part for part in patch_proposal.pointer[1:].split("/") if part
-                    ]
-                    if len(path_parts) >= 1:
-                        target = base_data
-                        for part in path_parts[:-1]:
-                            if isinstance(target, dict):
-                                target = target.get(part, {})
-                            elif isinstance(target, list) and part.isdigit():
-                                idx = int(part)
-                                target = target[idx] if idx < len(target) else {}
+                path_parts = [
+                    part for part in patch_proposal.pointer[1:].split("/") if part
+                ]
+                if len(path_parts) >= 1:
+                    target = base_data
+                    for part in path_parts[:-1]:
+                        if isinstance(target, dict):
+                            target = target.get(part, {})
+                        elif isinstance(target, list) and part.isdigit():
+                            idx = int(part)
+                            target = target[idx] if idx < len(target) else {}
 
-                        final_part = path_parts[-1]
-                        if isinstance(target, dict) and final_part in target:
-                            del target[final_part]
+                    final_part = path_parts[-1]
+                    if isinstance(target, dict) and final_part in target:
+                        del target[final_part]
 
             # Return the modified content as YAML
             return yaml.dump(base_data, default_flow_style=False, allow_unicode=True)
@@ -393,7 +391,7 @@ class SecondaryValidator:
             return all(
                 field in patch_dict for field in required_fields
             ) and patch_proposal.type in ["add", "modify", "delete"]
-        except:
+        except (KeyError, TypeError, AttributeError):
             return False
 
     def _check_permissions(self, patch_proposal: PatchProposal) -> bool:
@@ -422,12 +420,13 @@ class SecondaryValidator:
 
         # Basic validation of constraint values
         for constraint in constraints:
-            if constraint.get("type") == "numeric":
-                if constraint.get("name") == "max_request_size":
-                    if patch_proposal.change and len(
-                        str(patch_proposal.change)
-                    ) > constraint.get("value", 10000):
-                        return False
+            if (
+                constraint.get("type") == "numeric"
+                and constraint.get("name") == "max_request_size"
+                and patch_proposal.change
+                and len(str(patch_proposal.change)) > constraint.get("value", 10000)
+            ):
+                return False
         return True
 
     def _get_confidence(self, patch_proposal: PatchProposal) -> float:

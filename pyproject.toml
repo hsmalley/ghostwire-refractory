@@ -46,6 +46,9 @@ markers = [
 
 [tool.ruff]
 line-length = 88
+exclude = [
+    "LEGACY/**",
+]
 
 
 

@@ -33,7 +33,7 @@ def test_multiple_api_calls_increase_counters():
     """Test that multiple API calls properly increase counters"""
     # Get initial metrics
     initial_metrics = client.get("/api/v1/metrics")
-    initial_content = initial_metrics.content.decode()
+    initial_metrics.content.decode()
 
     # Hit the health endpoint multiple times
     for _ in range(3):
@@ -42,7 +42,7 @@ def test_multiple_api_calls_increase_counters():
 
     # Get final metrics
     final_metrics = client.get("/api/v1/metrics")
-    final_content = final_metrics.content.decode()
+    final_metrics.content.decode()
 
     # The final metrics should show increased counts
     # (This would require parsing the metrics more carefully in a real test)

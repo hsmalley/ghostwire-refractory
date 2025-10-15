@@ -52,7 +52,6 @@ class PermissionManager:
         """
         # Extract task information
         task_type = task.get("type", "unknown")
-        priority = task.get("priority", "medium")
 
         # Get the required permission level for this task type
         required_level = self.default_permissions.get(task_type, "read")

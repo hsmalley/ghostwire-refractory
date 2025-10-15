@@ -14,11 +14,11 @@ from .ghostwire_scoring import (
 # Import orchestrator-related utilities if available
 try:
     from ..orchestrator import (
-        GhostWireOrchestrator,
-        PatchProposal,
-        SecondaryValidator,
-        create_ghostwire_orchestrator,
-        decompose_user_request,
+        GhostWireOrchestrator,  # noqa: F401
+        PatchProposal,  # noqa: F401
+        SecondaryValidator,  # noqa: F401
+        create_ghostwire_orchestrator,  # noqa: F401
+        decompose_user_request,  # noqa: F401
     )
 
     HAS_ORCHESTRATOR = True

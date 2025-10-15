@@ -26,4 +26,6 @@ async def health_check():
 
 
 # Register the instrumented route
-router.add_api_route("/health", health_check, methods=["GET"], response_model=HealthResponse)
+router.add_api_route(
+    "/health", health_check, methods=["GET"], response_model=HealthResponse
+)

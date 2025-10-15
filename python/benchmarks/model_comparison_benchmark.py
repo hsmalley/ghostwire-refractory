@@ -322,7 +322,7 @@ async def main():
     if args.models:
         benchmark.models = args.models
 
-    results = await benchmark.run_model_comparison()
+    await benchmark.run_model_comparison()
 
     # Print a summary
     print("\n📋 SUMMARY:")

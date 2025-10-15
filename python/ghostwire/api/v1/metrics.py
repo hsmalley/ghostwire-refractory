@@ -2,7 +2,6 @@
 # It is listed as a runtime dependency in pyproject.toml.
 
 from fastapi import APIRouter, Response
-
 from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
 # Histogram per route (example)
@@ -16,9 +15,8 @@ api_calls_total = Counter(
 )
 
 # Counter for process CPU usage (simulated)
-process_cpu_usage = Counter(
-    "process_cpu_usage_seconds", "Process CPU usage time"
-)
+process_cpu_usage = Counter("process_cpu_usage_seconds", "Process CPU usage time")
+
 
 # Decorator to wrap route handlers
 def instrument_route(route_name: str):
@@ -32,13 +30,12 @@ def instrument_route(route_name: str):
 
     return decorator
 
+
 # Create router for metrics endpoint
 metrics_router = APIRouter()
+
 
 @metrics_router.get("/metrics")
 async def metrics():
     """Expose Prometheus metrics"""
-    return Response(
-        generate_latest(),
-        media_type=CONTENT_TYPE_LATEST
-    )
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

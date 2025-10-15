@@ -379,6 +379,23 @@ This script will:
 
 See `scripts/run_local.sh` and `.env.example` for details.
 
+### Document Ingestion
+
+The project includes a document ingestion script for importing text documents into the vector database:
+
+```bash
+# Ingest documents from a directory
+python scripts/import_documents.py docs/
+
+# Ingest with summarization enabled
+python scripts/import_documents.py docs/ --summarize
+
+# Perform a dry run to preview what would be ingested
+python scripts/import_documents.py docs/ --dry-run
+```
+
+See `scripts/README.md` for detailed usage instructions.
+
 ---
 
 *This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When contributing, see `CONTRIBUTING.md` for guidance on where to use the project's thematic flavor (neon/cyberpunk, Neon Oracle voice) vs. neutral, public-facing documentation.*

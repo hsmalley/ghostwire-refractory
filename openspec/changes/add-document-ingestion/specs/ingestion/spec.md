@@ -10,22 +10,6 @@ The project SHALL provide a CLI script `scripts/import_documents.py` supporting 
 - **WHEN** running `python scripts/import_documents.py --help`
 - **THEN** the script shows available CLI flags including `--dry-run` and optional summarization flag.
 
-#### Scenario: Chunking Support
-- **WHEN** importing a large document
-- **THEN** the script chunks the document into smaller pieces with overlap.
-
-#### Scenario: Summarization Support
-- **WHEN** the `--summarize` flag is used
-- **THEN** the script applies summarization to large chunks before storage.
-
-#### Scenario: Embedding Generation
-- **WHEN** importing documents
-- **THEN** the script generates embeddings for each chunk using the existing embedding service.
-
-#### Scenario: Storage into Vector DB
-- **WHEN** importing documents without `--dry-run`
-- **THEN** the script stores the documents and embeddings into the local vector DB.
-
 ### Requirement: Document Ingestion Tests
 The project SHALL provide unit and integration tests for the document ingestion script.
 

@@ -33,7 +33,7 @@ If you don't use the `uv` workspace helper, the easiest local workflow is:
 ```bash
 python -m venv .venv
 .venv/bin/pip install -e .
-PYTHONPATH=python/src python -m python.ghostwire.main
+PYTHONPATH=python uv run python -m python.ghostwire.main
 ```
 
 On macOS/zsh you can replace `.venv/bin/` with `.venv/bin/` as above. If the project already provides a `.env` file, ensure it contains appropriate values for `DB_PATH` and other settings.

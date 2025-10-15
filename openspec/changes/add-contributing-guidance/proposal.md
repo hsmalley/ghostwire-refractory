@@ -34,7 +34,7 @@ It will NOT:
 1. `CONTRIBUTING.md` exists at repo root and is readable.
 2. It clearly explains where to use the project's theme and where to use neutral tone.
 3. It documents an opt-out for emoji/ANSI logs (example env var e.g. `GHOSTWIRE_NO_EMOJI=1`) and notes how to implement it in logger code, or points to the file to edit if present.
-4. It provides a simple, alternate run snippet for contributors who don't have `uv` (venv + `PYTHONPATH=python/src python -m python.ghostwire.main`).
+4. It provides a simple, alternate run snippet for contributors who don't have `uv` (venv + `PYTHONPATH=python uv run python -m python.ghostwire.main`).
 5. A one-line link to `CONTRIBUTING.md` is added to `README.md` (or the proposal provides the exact insertion so it can be applied separately).
 6. No CI or runtime tests break; change is docs-only.
 

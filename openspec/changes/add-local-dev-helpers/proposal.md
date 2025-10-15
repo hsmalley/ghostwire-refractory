@@ -22,7 +22,7 @@ This is a small docs + scripts change. It will:
   - creates and activates a venv (idempotent),
   - installs the package in editable mode,
   - copies `.env.example` to `.env` if no `.env` present,
-  - runs `PYTHONPATH=python/src python -m python.ghostwire.main`.
+  - runs `PYTHONPATH=python uv run python -m python.ghostwire.main`.
 - Add a one-line snippet to `README.md` under Development Setup pointing to the script.
 
 It will NOT change runtime configuration or CI pipelines.

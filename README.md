@@ -48,12 +48,12 @@ to another language with a clear, tested reference implementation.
 
 Using pip (requires build tools for hnswlib):
 ```bash
-pip install -e .
+uv run pip install -e .
 ```
 
-Or using uv (recommended):
+(Recommended) Use the `uv` workspace helper to run commands in a consistent environment:
 ```bash
-uv pip install -e .
+uv run pip install -e .
 ```
 
 ## Configuration
@@ -96,7 +96,7 @@ uv run ghostwire
 ### Method 2: Direct execution with proper PYTHONPATH
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python python -m ghostwire.main
+PYTHONPATH=python uv run python -m ghostwire.main
 ```
 
 ### Method 3: Using uv with PYTHONPATH
@@ -118,7 +118,7 @@ To use the operator console client:
 
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python python -m python.client.operator_console
+PYTHONPATH=python uv run python -m python.client.operator_console
 ```
 
 ## Benchmarking
@@ -127,17 +127,17 @@ Run the benchmark suite:
 
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python python -m python.benchmarks.embedding_benchmarks
-PYTHONPATH=python python -m python.benchmarks.rag_benchmarks
-PYTHONPATH=python python -m python.benchmarks.summarization_benchmarks
+PYTHONPATH=python uv run python -m python.benchmarks.embedding_benchmarks
+PYTHONPATH=python uv run python -m python.benchmarks.rag_benchmarks
+PYTHONPATH=python uv run python -m python.benchmarks.summarization_benchmarks
 ```
 
 Or run all benchmarks from the project root:
 ```bash
 export PYTHONPATH=python
-python -m python.benchmarks.embedding_benchmarks
-python -m python.benchmarks.rag_benchmarks
-python -m python.benchmarks.summarization_benchmarks
+uv run python -m python.benchmarks.embedding_benchmarks
+uv run python -m python.benchmarks.rag_benchmarks
+uv run python -m python.benchmarks.summarization_benchmarks
 ```
 
 Note: Benchmarks require a running GhostWire Refractory server to connect to.
@@ -148,13 +148,13 @@ Run the test suite:
 
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python python -m pytest python/tests/
+PYTHONPATH=python uv run python -m pytest python/tests/
 ```
 
 Or with pytest discovery:
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
-PYTHONPATH=python pytest python/tests/
+PYTHONPATH=python uv run pytest python/tests/
 ```
 
 ## Dependencies

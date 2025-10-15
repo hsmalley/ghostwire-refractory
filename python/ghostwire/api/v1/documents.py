@@ -1,5 +1,7 @@
 """
-Document endpoints for GhostWire Refractory
+# ⚡️ Document Endpoints
+
+Ingestion, search, and listing of document chunks. Every operation validates session credentials, enforces content limits, and records metadata in the vector store.
 """
 
 import logging

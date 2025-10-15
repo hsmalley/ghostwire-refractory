@@ -19,6 +19,7 @@ dependencies = [
     "psutil>=5.9.0",
     "pytest>=7.0.0",
     "prometheus_client>=0.19.0",
+    "pyyaml>=6.0",
 
 ]
 
@@ -46,12 +47,7 @@ markers = [
 [tool.ruff]
 line-length = 88
 
-[tool.uv.dev-dependencies]
-black = ">=24.0"
-mypy = ">=1.8"
-ruff = ">=0.5"
-pytest = ">=7.0.0"
-pytest-sugar = ">=0.9.0"
+
 
 # Dev‑only packages for linting, type‑checking, and testing
 [tool.ruff.lint]

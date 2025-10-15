@@ -33,6 +33,27 @@ Response:
 }
 ```
 
+### Prometheus Metrics
+
+**GET** `/metrics`
+
+Retrieve Prometheus-compatible metrics for monitoring API performance.
+
+Response:
+
+Plain text response containing metrics in Prometheus exposition format:
+
+```text
+# HELP api_server_latency_seconds Latency of API routes
+# TYPE api_server_latency_seconds histogram
+api_server_latency_seconds_bucket{route="health",le="0.005"} 1.0
+api_server_latency_seconds_bucket{route="health",le="0.01"} 1.0
+# ...
+# HELP api_server_calls_total Total number of API calls
+# TYPE api_server_calls_total counter
+api_server_calls_total{route="health"} 1.0
+```
+
 ### Embeddings
 
 **POST** `/embeddings`

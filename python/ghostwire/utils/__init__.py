@@ -1,7 +1,7 @@
 """GhostWire utilities package"""
 
 from .context_optimizer import estimate_token_count, optimize_context_window
-from .error_handling import handle_api_error
+from .error_handling import handle_exception
 from .ghostwire_scoring import (
     compute_comprehensive_ghostwire_score,
     compute_general_ghostwire_score,
@@ -29,7 +29,7 @@ except ImportError:
 __all__ = [
     "optimize_context_window",
     "estimate_token_count",
-    "handle_api_error",
+    "handle_exception",
     "compute_general_ghostwire_score",
     "compute_rag_ghostwire_score",
     "compute_retrieval_ghostwire_score",

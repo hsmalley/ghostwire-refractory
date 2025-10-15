@@ -8,9 +8,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 import pytest
 
 # Import benchmark routines from the new module locations
-from python.benchmarks.embedding_benchmarks import BenchmarkRunner
-from python.benchmarks.rag_benchmarks import RAGBenchmark
-from python.benchmarks.summarization_benchmarks import SummarizationBenchmark
+from benchmarks.embedding_benchmarks import BenchmarkRunner
+from benchmarks.rag_benchmarks import RAGBenchmark
+from benchmarks.summarization_benchmarks import SummarizationBenchmark
 
 
 @pytest.fixture(scope="session")

@@ -8,8 +8,8 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from ..config.settings import settings
-from ..orchestrator.integration import (
+from ...config.settings import settings
+from ...orchestrator.integration import (
     create_ghostwire_orchestrator,
 )
 

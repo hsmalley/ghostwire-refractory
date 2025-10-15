@@ -8,4 +8,4 @@
 - [x] Document benchmark data sources in `docs/benchmark.md`.
 - [x] Run local sanity check with `pytest -m benchmark`.
 - [x] Validate with `openspec validate add-benchmark-tests --strict`.
-- [ ] Push and open a PR after approval.
+- [x] Push and open a PR after approval.

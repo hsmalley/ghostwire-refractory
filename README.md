@@ -1,4 +1,4 @@
-# GhostWire Refractory
+# ⚡️ GhostWire Refractory
 
 ![](GHOSTWIRE/ghostwire_coming_soon.png "GhostWire: photonic-whisper sigil")
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -175,6 +175,35 @@ The benchmarking suite now includes:
 - **Model Comparison Benchmark**: Comprehensive comparison of multiple models using overall GHOSTWIRE scores
 
 Note: Benchmarks require a running GhostWire Refractory server to connect to.
+
+## Prometheus Metrics
+
+The GhostWire Refractory exposes Prometheus-compatible metrics for monitoring API performance and health.
+
+### Querying Metrics
+
+Access the metrics endpoint:
+
+```bash
+# Query metrics directly
+curl http://localhost:8000/api/v1/metrics
+
+# Query specific metrics with PromQL (if using Prometheus server)
+# Example PromQL queries:
+# - Rate of API calls: rate(api_server_calls_total[5m])
+# - 95th percentile latency: histogram_quantile(0.95, sum(rate(api_server_latency_seconds_bucket[5m])) by (le))
+```
+
+The metrics endpoint provides:
+- **API Latency Histograms**: Per-route latency measurements
+- **API Call Counters**: Total number of API calls per route
+- **Process Metrics**: CPU and memory usage statistics
+
+### Available Metrics
+
+- `api_server_latency_seconds`: Histogram of API route latencies
+- `api_server_calls_total`: Counter of total API calls per route
+- `process_cpu_usage_seconds`: Simulated process CPU usage counter
 
 ## Orchestrator System
 

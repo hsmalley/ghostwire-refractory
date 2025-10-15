@@ -1,5 +1,7 @@
 """
-Embedding endpoints for GhostWire Refractory
+# ⚡️ Embedding Endpoints
+
+Single‑step and batch creation of embeddings, plus a model discovery helper. All inputs are size‑checked and validated against the configured embed dimension.
 """
 
 from typing import Any
@@ -10,11 +12,13 @@ from ...models.embedding import EmbeddingRequest, EmbeddingResponse
 from ...services.embedding_service import embedding_service
 from ...utils.error_handling import handle_exception
 from ...utils.security import validate_text_content
+from .metrics import instrument_route
 
 router = APIRouter()
 
 
 @router.post("/embeddings", response_model=EmbeddingResponse)
+@instrument_route("embeddings")
 async def create_embeddings(request: EmbeddingRequest):
     """Create embeddings for input text(s)"""
     try:
@@ -39,6 +43,7 @@ async def create_embeddings(request: EmbeddingRequest):
 
 
 @router.get("/models")
+@instrument_route("models")
 async def list_models() -> dict[str, Any]:
     """List available models"""
     # This would integrate with Ollama to list models

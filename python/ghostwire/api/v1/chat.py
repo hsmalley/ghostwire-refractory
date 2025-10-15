@@ -1,5 +1,7 @@
 """
-Chat endpoints for GhostWire Refractory
+# ⚡️ Chat Endpoints
+
+The heart of GhostWire’s interactive surface. Endpoints provide streaming and non‑streaming chat, embedding generation, and memory persistence backed by RAG.
 """
 
 from fastapi import APIRouter, HTTPException
@@ -17,6 +19,7 @@ from ...utils.security import (
     validate_session_id,
     validate_text_content,
 )
+from .metrics import instrument_route
 
 router = APIRouter()
 
@@ -48,6 +51,7 @@ class ChatResponse(BaseModel):
 
 
 @router.post("/chat_embedding")
+@instrument_route("chat_embedding")
 async def chat_with_embedding(request: ChatEmbeddingRequest):
     """Chat endpoint that uses embeddings for context retrieval"""
     try:
@@ -100,6 +104,7 @@ async def chat_with_embedding(request: ChatEmbeddingRequest):
 
 
 @router.post("/chat_completion")
+@instrument_route("chat_completion")
 async def chat_completion(request: ChatEmbeddingRequest):
     """Simple chat completion without retrieval"""
     try:
@@ -126,6 +131,7 @@ async def chat_completion(request: ChatEmbeddingRequest):
 
 
 @router.post("/memory")
+@instrument_route("memory")
 async def add_memory(request: ChatEmbeddingRequest):
     """Add memory entry to the database"""
     try:

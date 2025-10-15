@@ -1,5 +1,7 @@
 """
-Rate limiting middleware for GhostWire Refractory
+# ⚡️ Rate‑Limit Middleware
+
+GhostWire’s guardian against abuse. Each client IP may issue up to `requests` per `window` seconds. Exceeding the budget returns a 429 with a terse warning.
 """
 
 import time
@@ -21,7 +23,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         # Get client IP address
-        client_ip = request.client.host
+        client_ip = request.client.host if request.client else "unknown"
 
         # Clean old requests outside the current window
         current_time = time.time()

@@ -1,5 +1,7 @@
 """
-GhostWire Refractory - Main Application Entry Point
+# ⚡️ Application Entrypoint
+
+The heart that stitches together FastAPI, CORS, rate‑limiting, and the ghostly HNSW index.
 """
 
 import atexit

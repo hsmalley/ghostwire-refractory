@@ -15,8 +15,8 @@ import psutil
 # Add the python directory to the path to access ghostwire modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from python.ghostwire.config.settings import settings
-from python.ghostwire.utils.ghostwire_scoring import (
+from ghostwire.config.settings import settings
+from ghostwire.utils.ghostwire_scoring import (
     compute_general_ghostwire_score,
     format_benchmark_results_with_scores,
 )

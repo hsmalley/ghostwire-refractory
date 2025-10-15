@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from ...ghostwire.main import app
+from python.ghostwire.main import app
 
 
 def test_health_check():

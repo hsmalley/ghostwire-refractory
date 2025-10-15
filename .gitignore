@@ -34,3 +34,9 @@ htmlcov/
 *.swo
 *~
 
+# Build artifacts (explicit)
+build/
+dist/
+ghostwire_refractory.egg-info/
+*.egg-info/
+

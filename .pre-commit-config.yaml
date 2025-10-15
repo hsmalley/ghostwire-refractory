@@ -28,6 +28,6 @@ repos:
       - id: markdownlint-cli2
         name: markdownlint-cli2
         entry: markdownlint-cli2
-        language: system
+        language: node
         files: \.(md|markdown)$
-        additional_dependencies: []
+        additional_dependencies: ["markdownlint-cli2@^0.36.0"]

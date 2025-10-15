@@ -52,10 +52,12 @@ Thanks for contributing — keep the neon for the right places, and keep public 
 
 ## Docs linting
 
-We enforce markdown linting with `markdownlint-cli2` via a pre-commit hook. Install it locally with npm (or run via npx):
+We enforce markdown linting with `markdownlint-cli2` via a pre-commit hook. The pre-commit configuration is
+self-contained and will automatically install the `markdownlint-cli2` binary for the hook, so contributors
+do not need to install it globally. If you prefer to run the linter manually, you can still use npm/npx:
 
 ```bash
-# using npm
+# optional: install locally
 npm install --save-dev markdownlint-cli2
 
 # or run via npx without installing

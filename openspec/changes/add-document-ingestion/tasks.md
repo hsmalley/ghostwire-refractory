@@ -1,18 +1,8 @@
-<!-- OPENSPEC:START -->
-# Tasks: add-document-ingestion
-
-- id: 1
-  title: Implement import_documents.py
-  owner: @hsmalley
-  estimate: 0.75h
-  description: |
-    Add the ingestion script with CLI flags, chunking, optional summarization, and use of existing embedding generation.
-
-- id: 2
-  title: Document usage
-  owner: @hsmalley
-  estimate: 0.1h
-  description: |
-    Add a README snippet explaining how to run the script and example commands.
-
-<!-- OPENSPEC:END -->
+## Implementation
+- [ ] Create or update `scripts/import_documents.py` according to spec.
+- [ ] Ensure CLI includes `--dry-run` and optional summarization flag.
+- [ ] Write unit tests for chunking and summarization logic.
+- [ ] Add integration test verifying embeddings stored in local vector DB.
+- [ ] Update documentation in README or scripts/README.md.
+- [ ] Run lint and type‑check.
+- [ ] Submit PR and get approvals.

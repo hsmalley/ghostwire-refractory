@@ -29,4 +29,13 @@
   description: |
     Open a small PR, request review, and land once approved.
 
+## Implementation
+- [x] Add `.env.example` at repo root containing common env names (DB_PATH, LOG_LEVEL, LOCAL_OLLAMA_URL, EMBED_DIM, and a comment about disabling emoji logs).
+- [x] Add `scripts/run_local.sh` (POSIX shell) that:
+  - creates and activates a venv (idempotent),
+  - installs the package in editable mode,
+  - copies `.env.example` to `.env` if no `.env` present,
+  - runs `PYTHONPATH=python uv run python -m python.ghostwire.main`.
+- [x] Add a one-line pointer under Development Setup in `README.md` linking to `scripts/run_local.sh` and mentioning the `.env.example`.
+- [x] Review & land PR after approval.
 <!-- OPENSPEC:END -->

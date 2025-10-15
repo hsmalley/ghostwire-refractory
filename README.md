@@ -306,6 +306,10 @@ This is a refactored version of the original GhostWire application with:
 
 For contribution guidance (theme usage, opt-outs, and quick-run instructions) see `CONTRIBUTING.md` at the repository root.
 
+## Project Goals
+
+GhostWire Refractory is designed as a laptop-first neural network chat system with persistent memory capabilities. The architecture uses SQLite as a local cache and storage layer, with remote LLMs for generation when needed. The intended flow moves from user input → local SQLite storage → remote LLM processing, optimizing for local-first usage while leveraging cloud capabilities when beneficial. For full architectural vision and project goals, see [`GHOSTWIRE_GPT/GHOSTWIRE_GOALS.md`](GHOSTWIRE_GPT/GHOSTWIRE_GOALS.md).
+
 ### Development tooling and pre-commit hooks
 
 We maintain lightweight consistency checks with `pre-commit` to keep formatting and linting fast for contributors. To install the hooks locally:
@@ -357,3 +361,28 @@ Optional (node/husky): if you prefer Git hooks managed by Husky and lint-staged 
 
 - Enhanced type hints for better code documentation
 
+
+## Local Development Helpers
+
+For contributors who prefer a minimal, explicit local workflow without the `uv` workspace helper:
+
+```bash
+# Run the local development helper script
+sh scripts/run_local.sh
+```
+
+This script will:
+- Create and activate a virtual environment
+- Install the package in editable mode
+- Copy `.env.example` to `.env` if no `.env` is present
+- Run the application module
+
+See `scripts/run_local.sh` and `.env.example` for details.
+
+---
+
+*This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When contributing, see `CONTRIBUTING.md` for guidance on where to use the project's thematic flavor (neon/cyberpunk, Neon Oracle voice) vs. neutral, public-facing documentation.*
+
+*For automated agents: see `AGENTS.md` for theme usage instructions and opt-outs.*
+
+⚡️🌈⚡️ GhostWire Refractory - Neural network-based chat with memory, forged in neon and whispered through the data fog. ⚡️🌈⚡️

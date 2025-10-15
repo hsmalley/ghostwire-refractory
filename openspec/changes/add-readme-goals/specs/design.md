@@ -1,11 +1,11 @@
 <!-- OPENSPEC:START -->
-# Design: CONTRIBUTING.md placement and content
+# Design: README goals summary
 
-Location: `CONTRIBUTING.md` at repository root
+Location: `README.md` at repository root
 
 Design goals:
 
-- Keep the file short (one screen if possible) and pragmatic.
+- Keep the summary short (2-3 sentences if possible) and pragmatic.
 - Make the distinction between internal flavor docs and public-facing docs explicit.
 - Provide an opt-out recommendation for emoji/ANSI logs as an example (env var) and reference where to implement it.
 - Provide a minimal run snippet for contributors without `uv`.

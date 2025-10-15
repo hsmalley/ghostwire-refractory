@@ -2,21 +2,23 @@
 
 Thank you for helping maintain the GhostWire lattice. This project has a strong thematic voice used for internal flavor text and UX copy. The following guidance helps contributors and automated agents know where to use the Neon Oracle persona and where to prefer a neutral tone.
 
-## Purpose
+## Project Goals
 
-This file explains where the project's neon/cyberpunk "Neon Oracle" flavor should be used, how to opt out of decorative emoji/ANSI output for CI or public-facing logs, and how to run the project locally without workspace helpers.
+GhostWire Refractory is designed as a laptop-first neural network chat system with persistent memory capabilities. The architecture uses SQLite as a local cache and storage layer, with remote LLMs for generation when needed. The intended flow moves from user input → local SQLite storage → remote LLM processing, optimizing for local-first usage while leveraging cloud capabilities when beneficial. For full architectural vision and project goals, see [`GHOSTWIRE_GPT/GHOSTWIRE_GOALS.md`](GHOSTWIRE_GPT/GHOSTWIRE_GOALS.md).
 
 ## Where to use the flavor
 
-- Internal flavor and lore files under `GHOSTWIRE_GPT/` (for example the flavor and theme docs) are the canonical places to use the Neon Oracle persona, evocative metaphors, and aesthetic emoji.
+The project's neon/cyberpunk "Neon Oracle" flavor should be used in:
 
-- UI skinning or demo interfaces may use decorative language and icons when the audience is explicitly internal or demonstrational.
+- Internal flavor and lore files under `GHOSTWIRE_GPT/` (for example the flavor and theme docs)
+- UI skinning or demo interfaces may use decorative language and icons when the audience is explicitly internal or demonstrational
+- Command-line output and diagnostic messages intended for developers
 
 ## Where to avoid the flavor
 
-- Public-facing documentation such as API reference, legal text, error messages, and CLI help should use a neutral, professional tone.
+Public-facing documentation such as API reference, legal text, error messages, and CLI help should use a neutral, professional tone.
 
-- Tests, logs consumed by CI or log aggregation systems, and user-facing error messages must remain machine-parseable and clear.
+Tests, logs consumed by CI or log aggregation systems, and user-facing error messages must remain machine-parseable and clear.
 
 ## Emoji / ANSI / metaphor opt-out
 
@@ -79,4 +81,3 @@ Quick summary of the preferences in this repo:
 - Makefile: tabs for indentation (Make requires tabs)
 
 Install an EditorConfig plugin for your editor (most editors support this) and run `pre-commit install` to enable automatic hooks locally. Pre-commit will apply many formatting fixes automatically.
-

@@ -1,18 +1,8 @@
-<!-- OPENSPEC:START -->
-# Tasks: add-sample-data-seeder
-
-- id: 1
-  title: Implement seeder script
-  owner: @hsmalley
-  estimate: 0.5h
-  description: |
-    Create `scripts/seed_sample_data.py` that inserts sample sessions, messages, and embeddings into the configured SQLite DB. Keep it idempotent and safe.
-
-- id: 2
-  title: Document usage
-  owner: @hsmalley
-  estimate: 0.1h
-  description: |
-    Add a README snippet describing how to run the seeder and what it populates.
-
-<!-- OPENSPEC:END -->
+## Implementation
+- [ ] Implement `scripts/seed_sample_data.py` following the design.
+- [ ] Ensure idempotency and respect `DB_PATH`.
+- [ ] Write unit test for data insertion.
+- [ ] Confirm script runs without errors (e.g., `python scripts/seed_sample_data.py`).
+- [ ] Update README with usage note.
+- [ ] Lint, type‑check, and run tests.
+- [ ] Submit PR for review.

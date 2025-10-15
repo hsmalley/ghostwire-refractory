@@ -24,4 +24,4 @@
 
 ## 7. Review & Merge
 - [x] OpenSpec validation (`openspec validate add-prometheus-metrics --strict`).
-- [ ] PR approval, CI checks, final merge.
+- [x] PR approval, CI checks, final merge.

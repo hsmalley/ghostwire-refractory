@@ -16,20 +16,12 @@ A neural network-based chat system with memory that stores message embeddings in
 
 The application is organized in a modular structure:
 
-```
+```text
 python/
 ├── ghostwire/       # Main application modules
 │   ├── config/      # Configuration and settings
-│   ├── database/    # Database connection and repositories  
-## Canonical source
+│   ├── database/    # Database connection and repositories
 │   ├── models/      # Pydantic models
-The authoritative Python implementation lives in `python/ghostwire`. During the ongoing refactor
-and any future migrations to another language, treat `python/ghostwire` as the canonical source of
-truth. Contributors should make changes in this directory, update tests under `python/tests/`, and
-use the `PYTHONPATH=python` invocations shown below when running the application or tests locally.
-
-This keeps the migration path simple: once the feature set is stable in Python, it can be ported
-to another language with a clear, tested reference implementation.
 │   ├── services/    # Business logic
 │   ├── vector/      # Vector operations and HNSW management
 │   ├── api/         # API endpoints and middleware
@@ -41,17 +33,29 @@ to another language with a clear, tested reference implementation.
 └── tests/           # Unit and integration tests
 ```
 
+## Canonical source
+
+The authoritative Python implementation lives in `python/ghostwire`. During the ongoing refactor
+and any future migrations to another language, treat `python/ghostwire` as the canonical source of
+truth. Contributors should make changes in this directory, update tests under `python/tests/`, and
+use the `PYTHONPATH=python` invocations shown below when running the application or tests locally.
+
+This keeps the migration path simple: once the feature set is stable in Python, it can be ported
+to another language with a clear, tested reference implementation.
+
 ## Installation
 
 1. Clone the repository
 2. Install dependencies (requires Python 3.12+):
 
 Using pip (requires build tools for hnswlib):
+
 ```bash
 uv run pip install -e .
 ```
 
 (Recommended) Use the `uv` workspace helper to run commands in a consistent environment:
+
 ```bash
 uv run pip install -e .
 ```
@@ -81,6 +85,7 @@ For a complete configuration template, see [.env.sample](.env.sample).
 ## Running the Application
 
 ### Method 1: Install in development mode (recommended)
+
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
 pip install -e .
@@ -88,19 +93,23 @@ ghostwire  # This uses the entry point defined in pyproject.toml
 ```
 
 Or with uv:
+
 ```bash
 uv run pip install -e .
 uv run ghostwire
 ```
 
 ### Method 2: Direct execution with proper PYTHONPATH
+
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
 PYTHONPATH=python uv run python -m ghostwire.main
 ```
 
 ### Method 3: Using uv with PYTHONPATH
+
 From the project root:
+
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
 PYTHONPATH=python uv run python -m ghostwire.main
@@ -133,6 +142,7 @@ PYTHONPATH=python uv run python -m python.benchmarks.summarization_benchmarks
 ```
 
 Or run all benchmarks from the project root:
+
 ```bash
 export PYTHONPATH=python
 uv run python -m python.benchmarks.embedding_benchmarks
@@ -152,6 +162,7 @@ PYTHONPATH=python uv run python -m pytest python/tests/
 ```
 
 Or with pytest discovery:
+
 ```bash
 cd /path/to/ghostwire-refractory  # Project root
 PYTHONPATH=python uv run pytest python/tests/
@@ -160,6 +171,7 @@ PYTHONPATH=python uv run pytest python/tests/
 ## Dependencies
 
 The application requires:
+
 - Python 3.12+
 - FastAPI
 - SQLite with APSW
@@ -181,6 +193,7 @@ See `pyproject.toml` for the complete list of dependencies.
 ## Development
 
 This is a refactored version of the original GhostWire application with:
+
 - Proper separation of concerns
 - Modular architecture
 - Comprehensive error handling

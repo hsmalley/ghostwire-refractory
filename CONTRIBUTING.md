@@ -49,3 +49,17 @@ On macOS/zsh you can replace `.venv/bin/` with `.venv/bin/` as above. If the pro
 - Related OpenSpec proposals: `openspec/changes/implement-logging-optout/` and `openspec/changes/add-local-dev-helpers/`
 
 Thanks for contributing — keep the neon for the right places, and keep public interfaces clean.
+
+## Docs linting
+
+We enforce markdown linting with `markdownlint-cli2` via a pre-commit hook. Install it locally with npm (or run via npx):
+
+```bash
+# using npm
+npm install --save-dev markdownlint-cli2
+
+# or run via npx without installing
+npx markdownlint-cli2 .
+```
+
+If you use the repository `uv` workspace helper, you can run the npm command via `uv run` if you prefer.

@@ -10,8 +10,10 @@ import httpx
 
 from ..config.settings import settings
 from ..models.memory import MemoryQuery
+from ..services.cache_service import cache_service
 from ..services.embedding_service import embedding_service
 from ..services.memory_service import memory_service
+from ..utils.context_optimizer import format_optimized_context, optimize_context_window
 
 
 class RAGService:
@@ -107,24 +109,98 @@ class RAGService:
         model: str = None,
         top_k: int = 5,
         stream: bool = False,
+        use_cache: bool = True,
+        cache_similarity_threshold: float = 0.9,
     ) -> AsyncGenerator[str, None]:
         """Perform a complete RAG query with context retrieval and
-        response generation"""
+        response generation, with optional caching to reduce token usage"""
         try:
-            # Retrieve relevant context
+            # Generate embedding for the query to use for caching
+            query_embedding = await embedding_service.embed_text(query)
+            if not query_embedding:
+                self.logger.error("Failed to generate embedding for caching")
+                use_cache = False  # Can't cache without embedding
+
+            # Try to get exact cached response first (most efficient)
+            exact_cached_result = None
+            if use_cache:
+                exact_cached_result = cache_service.get_exact_response(
+                    session_id, query
+                )
+
+            if exact_cached_result:
+                # Return exact cached response (fastest path)
+                self.logger.info("Returning exact cached response for repeated request")
+                response = exact_cached_result["response"]
+                if stream:
+                    # Stream the cached response
+                    for i in range(0, len(response), 10):  # Stream in chunks
+                        yield response[i : i + 10]
+                else:
+                    yield response
+                return
+
+            # Try to get cached response based on similarity if exact match not found
+            cached_result = None
+            if use_cache and query_embedding:
+                cached_result = cache_service.get_cached_response(
+                    session_id, query, query_embedding, cache_similarity_threshold
+                )
+
+            if cached_result:
+                # Return cached response
+                response = cached_result["response"]
+                if stream:
+                    # Stream the cached response
+                    for i in range(0, len(response), 10):  # Stream in chunks
+                        yield response[i : i + 10]
+                else:
+                    yield response
+                return
+
+            # Retrieve relevant context (this is the expensive part we want to optimize)
             contexts = await self.retrieve_context(session_id, query, top_k)
 
-            # Build full prompt with context
-            context_text = ""
-            if contexts:
-                context_snippets = " | ".join(contexts[:3])  # Use top 3 contexts
-                context_text = f"Relevant prior notes: {context_snippets}\n\n"
+            # Optimize context window to reduce token usage
+            optimized_contexts = optimize_context_window(contexts)
+
+            # Build full prompt with optimized context
+            context_text = format_optimized_context(optimized_contexts)
 
             full_prompt = f"{context_text}User: {query}\n\nAssistant:"
 
-            # Generate and return response
-            async for token in self.generate_response(full_prompt, model, stream):
-                yield token
+            # Generate response
+            response_parts = []
+            async for token in self.generate_response(full_prompt, model, stream=False):
+                response_parts.append(token)
+
+            complete_response = "".join(response_parts)
+
+            # Cache the response for similar future queries
+            if use_cache and query_embedding:
+                cache_service.cache_response(
+                    session_id=session_id,
+                    query=query,
+                    query_embedding=query_embedding,
+                    response=complete_response,
+                    context=context_text if context_text else None,
+                    similarity_threshold=cache_similarity_threshold,
+                )
+
+                # Also cache exact response for repeated requests (higher efficiency)
+                cache_service.cache_exact_response(
+                    session_id=session_id,
+                    query=query,
+                    response=complete_response,
+                    context=context_text if context_text else None,
+                )
+
+            # Stream the response if requested
+            if stream:
+                for i in range(0, len(complete_response), 10):  # Stream in chunks
+                    yield complete_response[i : i + 10]
+            else:
+                yield complete_response
         except Exception as e:
             self.logger.error(f"RAG query failed: {e}")
             yield f"[ERROR] RAG query failed: {e}"

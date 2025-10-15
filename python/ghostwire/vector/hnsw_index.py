@@ -9,6 +9,7 @@ import hnswlib
 import numpy as np
 
 from ..config.settings import settings
+from ..database.repositories import MemoryRepository
 
 
 class HNSWIndexManager:
@@ -63,10 +64,55 @@ class HNSWIndexManager:
 
     def _backfill_from_db(self):
         """Backfill the HNSW index with existing vectors from the database"""
-        # This would require fetching all embeddings from the database
-        # For now, we'll use a dummy implementation until we
-        # have the full data structure
-        pass
+        # Fetch all memories from the database
+        try:
+            # Get all unique session IDs to fetch memories for all sessions
+            all_sessions = MemoryRepository.get_all_sessions()
+
+            if not all_sessions:
+                print("[HNSW] No existing sessions found in database to backfill")
+                return
+
+            # For each session, load memories and add embeddings to HNSW index
+            total_items = 0
+            for session_id in all_sessions:
+                # Get memories with embeddings from the database
+                memories = MemoryRepository.get_memories_by_session(
+                    session_id, limit=1000
+                )  # Prevent loading too many at once
+
+                if memories:
+                    # Extract embeddings and IDs for the HNSW index
+                    embeddings = []
+                    ids = []
+
+                    for memory in memories:
+                        # Convert embedding bytes back to array
+                        embedding_array = np.frombuffer(
+                            memory.embedding, dtype=np.float32
+                        )
+                        if (
+                            len(embedding_array) == settings.EMBED_DIM
+                        ):  # Ensure it matches expected dimension
+                            embeddings.append(embedding_array)
+                            ids.append(memory.id)
+                        else:
+                            print(
+                                f"[HNSW] Skipping memory {memory.id} with mismatched embedding dimension"
+                            )
+
+                    # Add embeddings to HNSW index in batches if there are any
+                    if embeddings and ids:
+                        vectors = np.array(embeddings, dtype=np.float32)
+                        ids_array = np.array(ids, dtype=np.int64)
+
+                        if self._index is not None:
+                            self._index.add_items(vectors, ids_array)
+                            total_items += len(ids)
+
+            print(f"[HNSW] Successfully backfilled {total_items} vectors from database")
+        except Exception as e:
+            print(f"[HNSW] ERROR during DB backfill: {e}")
 
     def add_items(self, vectors: np.ndarray, ids: np.ndarray) -> bool:
         """Add vectors to the index"""

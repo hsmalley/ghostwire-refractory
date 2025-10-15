@@ -10,6 +10,7 @@ from ..config.settings import settings
 from ..database.repositories import MemoryRepository
 from ..models.memory import Memory, MemoryCreate, MemoryQuery
 from ..utils.error_handling import EmbeddingDimMismatchError
+from ..utils.vector_utils import normalize_vector
 from ..vector.hnsw_index import get_hnsw_manager
 
 
@@ -20,13 +21,6 @@ class MemoryService:
         self.repository = MemoryRepository()
         self.hnsw_manager = get_hnsw_manager()
         self.logger = logging.getLogger(__name__)
-
-    def _normalize_vector(self, vector: np.ndarray) -> np.ndarray:
-        """Normalize a vector to unit length"""
-        norm = np.linalg.norm(vector)
-        if norm == 0:
-            return vector
-        return vector / norm
 
     def create_memory(self, memory_create: MemoryCreate) -> Memory:
         """Create a new memory entry"""
@@ -42,7 +36,7 @@ class MemoryService:
             raise ValueError("Embedding contains non-finite values")
 
         # Normalize the embedding
-        normalized_vec = self._normalize_vector(vec)
+        normalized_vec = normalize_vector(vec)
         memory_create.embedding = normalized_vec.tolist()
 
         # Create memory in DB
@@ -72,7 +66,7 @@ class MemoryService:
             raise ValueError("Query embedding contains non-finite values")
 
         # Normalize the query vector
-        normalized_vec = self._normalize_vector(vec)
+        normalized_vec = normalize_vector(vec)
         query.embedding = normalized_vec.tolist()
 
         # Try HNSW if initialized
@@ -116,6 +110,74 @@ class MemoryService:
         return self.repository.query_similar_by_embedding(
             query.session_id, query.embedding, query.limit
         )
+
+    def query_similar_memories_with_scores(
+        self, query: MemoryQuery
+    ) -> list[tuple[Memory, float]]:
+        """Query for similar memories and return with similarity scores"""
+        # Validate embedding dimension
+        if len(query.embedding) != settings.EMBED_DIM:
+            raise EmbeddingDimMismatchError(settings.EMBED_DIM, len(query.embedding))
+
+        # Validate embedding values
+        vec = np.array(query.embedding, dtype=np.float32)
+        if not np.all(np.isfinite(vec)):
+            raise ValueError("Query embedding contains non-finite values")
+
+        # Normalize the query vector
+        normalized_vec = normalize_vector(vec)
+        query.embedding = normalized_vec.tolist()
+
+        # Try HNSW if initialized
+        self.hnsw_manager.initialize_index()  # Ensure index is ready
+        count = self.hnsw_manager.get_current_count()
+
+        if count > 0:
+            try:
+                k = min(query.limit, count)
+                labels, distances = self.hnsw_manager.knn_query(
+                    normalized_vec.reshape(1, -1), k=k
+                )
+                ids = [int(i) for i in labels[0]]
+                distances_list = distances[0].tolist()
+
+                if ids:
+                    # Retrieve memories from DB based on HNSW results
+                    all_memories = self.repository.get_memories_by_session(
+                        query.session_id,
+                        limit=100,  # reasonable limit
+                    )
+
+                    # Create results list with proper score mapping
+                    results = []
+                    id_to_memory = {m.id: m for m in all_memories}
+
+                    for memory_id, distance in zip(ids, distances_list):
+                        if memory_id in id_to_memory:
+                            # Convert distance to similarity (HNSW distance is typically Euclidean or cosine distance)
+                            # For cosine distance, similarity = 1.0 - distance
+                            similarity = 1.0 - float(distance)
+                            results.append((id_to_memory[memory_id], similarity))
+
+                    self.logger.info(
+                        f"[HNSW] Retrieved {len(results)} neighbors from HNSW index with scores."
+                    )
+                    return results
+            except Exception as e:
+                self.logger.error(
+                    f"[HNSW] Query with scores failed ({e}); falling back to cosine similarity."
+                )
+
+        # Fallback: cosine similarity on DB results
+        self.logger.info("[DB] Using fallback cosine similarity for scored query")
+        # For the fallback case, we return the memories with dummy scores
+        # In the repository, cosine similarities are calculated but not returned
+        memories = self.repository.query_similar_by_embedding(
+            query.session_id, query.embedding, query.limit
+        )
+        return [
+            (memory, 0.0) for memory in memories
+        ]  # Placeholder - repository doesn't return actual scores
 
     def get_memories_by_session(self, session_id: str, limit: int = 10) -> list[Memory]:
         """Get memories for a specific session"""

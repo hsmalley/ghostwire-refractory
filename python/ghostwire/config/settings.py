@@ -67,6 +67,45 @@ class Settings(BaseSettings):
     DISABLE_SUMMARIZATION: bool = Field(
         default=False, description="Disable summarization features"
     )
+    SUMMARY_THRESHOLD_CHARS: int = Field(
+        default=1000, description="Minimum character count to trigger summarization"
+    )
+    SUMMARY_MAX_LENGTH_CHARS: int = Field(
+        default=50000, description="Maximum character count for summarization"
+    )
+    SUMMARY_COMPRESSION_RATIO: float = Field(
+        default=0.3,
+        description="Target compression ratio for summarization (0.1 = 10% of original)",
+    )
+    SUMMARY_MIN_OUTPUT_LENGTH: int = Field(
+        default=100, description="Minimum length of summarized output in characters"
+    )
+    SUMMARY_MAX_OUTPUT_LENGTH: int = Field(
+        default=2000, description="Maximum length of summarized output in characters"
+    )
+
+    # Context window optimization settings
+    CONTEXT_WINDOW_OPTIMIZATION: bool = Field(
+        default=True,
+        description="Enable context window optimization to reduce token usage",
+    )
+    MAX_CONTEXT_TOKENS: int = Field(
+        default=2048, description="Maximum tokens to send in context window"
+    )
+    CONTEXT_COMPRESSION_STRATEGY: str = Field(
+        default="recency",
+        description="Strategy for context selection (recency, relevance, hybrid)",
+    )
+    CONTEXT_TRUNCATION_METHOD: str = Field(
+        default="sentence",
+        description="Method for truncating context (sentence, word, character)",
+    )
+    MIN_CONTEXT_ITEMS: int = Field(
+        default=1, description="Minimum number of context items to include"
+    )
+    MAX_CONTEXT_ITEMS: int = Field(
+        default=10, description="Maximum number of context items to include"
+    )
 
     # CORS settings
     ALLOWED_ORIGINS: list[str] = Field(

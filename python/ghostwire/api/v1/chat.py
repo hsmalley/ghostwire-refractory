@@ -80,7 +80,13 @@ async def chat_with_embedding(request: ChatEmbeddingRequest):
         # Perform RAG query with streaming
         async def event_generator():
             try:
-                async for chunk in rag_service.rag_query(session_id, text, stream=True):
+                async for chunk in rag_service.rag_query(
+                    session_id,
+                    text,
+                    stream=True,
+                    use_cache=True,  # Enable caching to reduce token usage
+                    cache_similarity_threshold=0.85,  # Reasonable threshold for similarity
+                ):
                     yield chunk
             except Exception as e:
                 yield f"\n[ERROR] {type(e).__name__}: {e}\n"

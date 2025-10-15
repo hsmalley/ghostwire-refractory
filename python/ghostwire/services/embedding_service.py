@@ -185,13 +185,40 @@ class SummarizationService:
         self.client = httpx.AsyncClient(timeout=30.0)
 
     async def summarize_text(self, text: str) -> str:
-        """Summarize the given text using Ollama"""
+        """Summarize the given text using Ollama with configurable thresholds"""
         if settings.DISABLE_SUMMARIZATION:
             self.logger.info("Summarization disabled via settings")
             return text
 
-        # Use the local Ollama for summarization
-        prompt = f"Summarize this text concisely, keeping key details:\n\n{text}"
+        # Check if text meets minimum threshold for summarization
+        if len(text) < settings.SUMMARY_THRESHOLD_CHARS:
+            self.logger.info(
+                f"Text length ({len(text)}) below threshold ({settings.SUMMARY_THRESHOLD_CHARS}), skipping summarization"
+            )
+            return text
+
+        # Check if text exceeds maximum length for summarization
+        if len(text) > settings.SUMMARY_MAX_LENGTH_CHARS:
+            self.logger.warning(
+                f"Text length ({len(text)}) exceeds maximum ({settings.SUMMARY_MAX_LENGTH_CHARS}), truncating for summarization"
+            )
+            text = text[: settings.SUMMARY_MAX_LENGTH_CHARS]
+
+        # Calculate target summary length based on compression ratio
+        target_length = int(len(text) * settings.SUMMARY_COMPRESSION_RATIO)
+
+        # Ensure target length is within bounds
+        target_length = max(
+            settings.SUMMARY_MIN_OUTPUT_LENGTH,
+            min(target_length, settings.SUMMARY_MAX_OUTPUT_LENGTH),
+        )
+
+        # Use the local Ollama for summarization with length guidance
+        prompt = (
+            f"Summarize this text concisely, keeping key details. "
+            f"Target length: approximately {target_length} characters.\n\n"
+            f"{text}"
+        )
 
         try:
             response = await self.client.post(
@@ -206,11 +233,43 @@ class SummarizationService:
             result = response.json()
             summary = result.get("response", "")
 
+            # Ensure summary is within bounds
+            if len(summary) > settings.SUMMARY_MAX_OUTPUT_LENGTH:
+                summary = (
+                    summary[: settings.SUMMARY_MAX_OUTPUT_LENGTH].rsplit(" ", 1)[0]
+                    + "..."
+                )
+
             self.logger.info(f"Summary result preview: {summary[:120]}...")
             return summary.strip()
         except Exception as e:
             self.logger.error(f"Summarization failed: {e}")
             return text  # Return original text on failure
+
+    async def should_summarize(self, text: str) -> bool:
+        """Determine if text should be summarized based on configurable thresholds"""
+        if settings.DISABLE_SUMMARIZATION:
+            return False
+
+        if len(text) < settings.SUMMARY_THRESHOLD_CHARS:
+            return False
+
+        if len(text) > settings.SUMMARY_MAX_LENGTH_CHARS:
+            # Still summarize but with truncation
+            return True
+
+        return True
+
+    async def get_target_summary_length(self, text: str) -> int:
+        """Calculate the target summary length based on configurable thresholds"""
+        if len(text) < settings.SUMMARY_THRESHOLD_CHARS:
+            return len(text)  # No summarization needed
+
+        target_length = int(len(text) * settings.SUMMARY_COMPRESSION_RATIO)
+        return max(
+            settings.SUMMARY_MIN_OUTPUT_LENGTH,
+            min(target_length, settings.SUMMARY_MAX_OUTPUT_LENGTH),
+        )
 
 
 # Global instances

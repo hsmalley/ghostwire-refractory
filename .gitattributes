@@ -1,0 +1,4 @@
+*.py text eol=lf
+*.md text eol=lf
+.editorconfig text eol=lf
+.pre-commit-config.yaml text eol=lf

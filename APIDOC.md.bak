@@ -1,0 +1,240 @@
+# GhostWire Refractory API Documentation
+
+GhostWire Refractory is a neural network-based chat system with memory that stores message embeddings in SQLite and uses HNSW for efficient vector similarity search.
+
+## Base URL
+
+The API is served at:
+`http://localhost:8000/api/v1`
+
+## Authentication
+
+The API supports token-based authentication using JWT. Include your token in the Authorization header:
+
+```
+Authorization: Bearer <your-token>
+```
+
+## Endpoints
+
+### Health Check
+
+**GET** `/health`
+
+Check the health status of the API.
+
+Response:
+```json
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "message": ""
+}
+```
+
+### Embeddings
+
+**POST** `/embeddings`
+
+Create embeddings for input text(s).
+
+Request:
+```json
+{
+  "input": "string or array of strings to embed",
+  "model": "embedding model to use (optional)"
+}
+```
+
+Response:
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "object": "embedding",
+      "embedding": [0.1, 0.2, ...],
+      "index": 0
+    }
+  ],
+  "model": "model used",
+  "usage": {
+    "prompt_tokens": 10,
+    "total_tokens": 10
+  }
+}
+```
+
+**GET** `/models`
+
+List available models.
+
+Response:
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "id": "model-name",
+      "object": "model",
+      "owned_by": "local"
+    }
+  ]
+}
+```
+
+### Vectors
+
+**POST** `/vectors/upsert`
+
+Add or update a vector record.
+
+Request:
+```json
+{
+  "namespace": "collection name",
+  "id": "optional ID",
+  "text": "text content",
+  "embedding": [0.1, 0.2, ...],
+  "metadata": {"optional": "metadata"}
+}
+```
+
+Response:
+```json
+{
+  "object": "vector.upsert",
+  "status": "ok",
+  "id": "memory-id"
+}
+```
+
+**POST** `/vectors/query`
+
+Query similar vectors.
+
+Request:
+```json
+{
+  "namespace": "collection name",
+  "embedding": [0.1, 0.2, ...],
+  "top_k": 5
+}
+```
+
+Response:
+```json
+{
+  "object": "list",
+  "data": [
+    {
+      "prompt_text": "similar content",
+      "answer_text": "response content",
+      "score": 0,
+      "id": 1
+    }
+  ],
+  "model": "namespace"
+}
+```
+
+### Chat
+
+**POST** `/chat_embedding`
+
+Chat with embeddings for context retrieval.
+
+Request:
+```json
+{
+  "session_id": "session identifier (alphanumeric, hyphens, underscores only)",
+  "text": "user message",
+  "prompt_text": "alternative field for user message",
+  "embedding": [0.1, 0.2, ...] (optional, will be generated if not provided),
+  "context": "additional context (optional)"
+}
+```
+
+Response: Streaming plain text response from the model.
+
+**POST** `/chat_completion`
+
+Simple chat completion without retrieval.
+
+Request:
+```json
+{
+  "session_id": "session identifier",
+  "text": "user message",
+  "prompt_text": "alternative field for user message"
+}
+```
+
+Response:
+```json
+{
+  "response": "model response"
+}
+```
+
+**POST** `/memory`
+
+Add a memory entry to the database.
+
+Request:
+```json
+{
+  "session_id": "session identifier",
+  "text": "memory content",
+  "prompt_text": "alternative field for content",
+  "embedding": [0.1, 0.2, ...] (optional, will be generated if not provided)
+}
+```
+
+Response:
+```json
+{
+  "status": "ok",
+  "message": "Memory created with ID: 1"
+}
+```
+
+## Error Handling
+
+All API endpoints return appropriate HTTP status codes. Errors are returned in the following format:
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error message",
+    "details": {}
+  }
+}
+```
+
+## Rate Limiting
+
+The API implements rate limiting. By default, you can make 100 requests per 60-second window.
+
+## Configuration
+
+The application behavior can be configured through environment variables:
+
+- `HOST`: Host to bind the server to (default: "0.0.0.0")
+- `PORT`: Port to bind the server to (default: 8000)
+- `DEBUG`: Enable debug mode (default: False)
+- `DB_PATH`: Path to SQLite database (default: "memory.db")
+- `EMBED_DIM`: Dimension of embedding vectors (default: 768)
+- `LOCAL_OLLAMA_URL`: Local Ollama API URL (default: "http://localhost:11434")
+- `REMOTE_OLLAMA_URL`: Remote Ollama API URL (default: "http://100.103.237.60:11434")
+- `DEFAULT_OLLAMA_MODEL`: Default Ollama model for generation (default: "gemma3:1b")
+- `SUMMARY_MODEL`: Model for summarization (default: "gemma3:1b")
+- `DISABLE_SUMMARIZATION`: Disable summarization features (default: False)
+
+## Security
+
+- All API requests should be made over HTTPS in production
+- Session IDs must be alphanumeric and contain only hyphens and underscores
+- Text content is validated to prevent common injection attacks
+- Input lengths are limited to prevent abuse

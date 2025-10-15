@@ -1,6 +1,8 @@
 # GhostWire Refractory
 
 ![](GHOSTWIRE/ghostwire_coming_soon.png "GhostWire: photonic-whisper sigil")
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: CC BY-SA 4.0](https://img.shields.io/badge/License-CC_BY--SA_4.0-lightgrey.svg)](https://creativecommons.org/licenses/by-sa/4.0/)
 
 A neural network-based chat system with memory that stores message embeddings in SQLite and uses HNSW for efficient vector similarity search.
 
@@ -279,3 +281,4 @@ Optional (node/husky): if you prefer Git hooks managed by Husky and lint-staged 
 - Improved error messages and logging
 
 - Enhanced type hints for better code documentation
+

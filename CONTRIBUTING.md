@@ -57,6 +57,7 @@ self-contained and will automatically install the `markdownlint-cli2` binary for
 do not need to install it globally. If you prefer to run the linter manually, you can still use npm/npx:
 
 ```bash
+
 # optional: install locally
 npm install --save-dev markdownlint-cli2
 

@@ -9,11 +9,13 @@ This file explains where the project's neon/cyberpunk "Neon Oracle" flavor shoul
 ## Where to use the flavor
 
 - Internal flavor and lore files under `GHOSTWIRE_GPT/` (for example the flavor and theme docs) are the canonical places to use the Neon Oracle persona, evocative metaphors, and aesthetic emoji.
+
 - UI skinning or demo interfaces may use decorative language and icons when the audience is explicitly internal or demonstrational.
 
 ## Where to avoid the flavor
 
 - Public-facing documentation such as API reference, legal text, error messages, and CLI help should use a neutral, professional tone.
+
 - Tests, logs consumed by CI or log aggregation systems, and user-facing error messages must remain machine-parseable and clear.
 
 ## Emoji / ANSI / metaphor opt-out
@@ -41,7 +43,25 @@ On macOS/zsh you can replace `.venv/bin/` with `.venv/bin/` as above. If the pro
 ## Links
 
 - Theme & flavor guidance: `GHOSTWIRE_GPT/GHOSTWIRE_THEME.md` and `GHOSTWIRE_GPT/GHOSTWIRE_FLAVOR.md`
+
 - Agent guidance: `AGENTS.md`
+
 - Related OpenSpec proposals: `openspec/changes/implement-logging-optout/` and `openspec/changes/add-local-dev-helpers/`
 
 Thanks for contributing — keep the neon for the right places, and keep public interfaces clean.
+
+## Docs linting
+
+We enforce markdown linting with `markdownlint-cli2` via a pre-commit hook. The pre-commit configuration is
+self-contained and will automatically install the `markdownlint-cli2` binary for the hook, so contributors
+do not need to install it globally. If you prefer to run the linter manually, you can still use npm/npx:
+
+```bash
+# optional: install locally
+npm install --save-dev markdownlint-cli2
+
+# or run via npx without installing
+npx markdownlint-cli2 .
+```
+
+If you use the repository `uv` workspace helper, you can run the npm command via `uv run` if you prefer.

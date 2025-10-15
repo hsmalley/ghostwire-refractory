@@ -135,6 +135,14 @@ class Settings(BaseSettings):
     # Logging
     LOG_LEVEL: str = Field(default="INFO", description="Logging level")
     LOG_FILE: str | None = Field(default=None, description="File to write logs to")
+    LOG_FORMAT: str = Field(
+        default="emoji", 
+        description="Logging format: plain, emoji, or json"
+    )
+    GHOSTWIRE_NO_EMOJI: bool = Field(
+        default=False, 
+        description="Disable emoji/ANSI logging output (opt-out)"
+    )
 
     model_config = {
         "env_file": ".env",

@@ -28,7 +28,24 @@ If you'd like to disable decorative output (emoji, ANSI color sequences, or play
 GHOSTWIRE_NO_EMOJI=1
 ```
 
-This is a recommended example. The repo's docs and OpenSpec proposals reference this env var as a suggested convention; if you want the runtime behavior wired to this var, see the `implement-logging-optout` change or open a small PR to add handling in the logging initialization.
+Additionally, you can configure logging with these environment variables:
+
+- `LOG_FORMAT`: Set to `plain`, `emoji`, or `json`
+- `LOG_LEVEL`: Set logging level (e.g., `INFO`, `DEBUG`, `WARNING`)
+- `LOG_FILE`: Optional path to write logs to a file
+
+Examples:
+
+```bash
+# Disable emoji decorations but keep plain text
+GHOSTWIRE_NO_EMOJI=1 python -m python.ghostwire.main
+
+# Use JSON logging format
+LOG_FORMAT=json python -m python.ghostwire.main
+
+# Write logs to a file with JSON format
+LOG_FILE=app.log LOG_FORMAT=json python -m python.ghostwire.main
+```
 
 ## Quick run instructions (no `uv` required)
 

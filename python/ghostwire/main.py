@@ -5,6 +5,7 @@ The heart that stitches together FastAPI, CORS, rate‑limiting, and the ghostly
 """
 
 import atexit
+import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +14,7 @@ from .api.middleware.rate_limit import RateLimitMiddleware
 from .api.v1.router import api_router
 from .config.settings import settings
 from .database.connection import close_db_pool
+from .logging_config import setup_logging
 from .vector.hnsw_index import get_hnsw_manager
 
 
@@ -50,14 +52,19 @@ def create_app() -> FastAPI:
     # Startup and shutdown events
     @app.on_event("startup")
     async def startup_event():
-        print("[SERVER] Starting GhostWire Refractory...")
+        # Setup logging according to configuration
+        setup_logging()
+        
+        logger = logging.getLogger(__name__)
+        logger.info("⚡️ Starting GhostWire Refractory...")
         # Initialize HNSW index
         hnsw_manager = get_hnsw_manager()
         hnsw_manager.initialize_index()
 
     @app.on_event("shutdown")
     async def shutdown_event():
-        print("[SERVER] Shutting down GhostWire Refractory...")
+        logger = logging.getLogger(__name__)
+        logger.info("⚡️ Shutting down GhostWire Refractory...")
         # Save HNSW index
         hnsw_manager = get_hnsw_manager()
         hnsw_manager.save_index()

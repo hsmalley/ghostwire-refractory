@@ -1,53 +1,34 @@
-# OpenSpec Change Proposal
+# GhostWire Refractory - OpenSpec Specifications Overview
 
 ## Theme & Tone
 
 This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When authoring specs or deltas, prefer clear technical language first, then tasteful theatricality. Use the project's lexicon (e.g., "controller" → "master", "client" → "submissive") only where it aids clarity. Add a one-line poetic residue at the end of major proposals as a signature.
 
-## Title: GhostWire Token Optimization & Memory Enhancement
+## Capabilities
 
-## Description
-This proposal outlines changes to enhance GhostWire Refractory's token efficiency by implementing SQLite as a buffer and cache for remote LLM interactions, while adding document storage capabilities with Qdrant-compatible endpoint support.
+The GhostWire Refractory system is organized into several key capabilities, each with its own specification:
 
-## Motivation
-Current implementation processes all user inputs and LLM responses without caching, leading to excessive token usage. The goal is to save tokens by storing embeddings in SQLite and only processing what's necessary with remote LLMs, while providing long-term memory capabilities.
+- **API**: REST endpoints with OpenAI, Qdrant, and Ollama compatibility
+- **Authentication**: JWT-based authentication and rate limiting
+- **CLI**: Command-line interface for system management
+- **Configuration**: Settings management with Pydantic BaseSettings
+- **Database**: SQLite connection pooling and data access
+- **Embedding**: Vector generation from text inputs
+- **Memory**: Persistent storage with vector similarity search
+- **Models**: Pydantic data models for validation
+- **Utils**: Common helper functions and validation
+- **Vector**: HNSW index management for similarity search
+- **Orchestrator**: Multi-LLM coordination with Master/Worker pattern
+- **Changes**: Tracking of implemented improvements and features
 
-## Implementation Details
+## Active Changes
 
-### 1. Enhanced Token Buffering System
-**Objective**: Implement SQLite as a buffer and cache to minimize remote LLM token consumption.
+- `token-optimization-features`: Implement token optimization, document storage, and Qdrant compatibility
+- `add-openspec-orchestrator`: Multi-LLM orchestration with Master/Worker pattern
 
-**Changes**:
-- Modify the RAG service to implement intelligent caching of embedding comparisons
-- Create a token optimization layer that checks cached responses before making remote calls
-- Implement a cache expiry system to manage SQLite storage efficiently
-- Add logic to bypass remote calls when cached responses are sufficiently similar to previous queries
+## Purpose
 
-**Code Modifications**:
-```
-services/rag_service.py - Add caching layer with similarity threshold
-database/repositories.py - Add cache management queries
-config/settings.py - Add cache-related configuration options
-```
-
-### 2. Document Storage Capability
-**Objective**: Add functionality to store user documents (e.g., code) in the vector database.
-
-**Changes**:
-- Create new service for document ingestion and chunking
-- Implement document parsing for various formats (code, text, etc.)
-- Add endpoints for document upload and management
-- Create document-specific memory storage with proper metadata
-
-**Code Modifications**:
-```
-services/document_service.py - New service for document handling
-api/v1/documents.py - New API endpoints for document management
-models/document.py - New models for document representation
-database/repositories.py - Add document storage methods
-```
-
-### 3. Qdrant-Compatible Endpoint
+This specification system provides a comprehensive reference for all capabilities of the GhostWire Refractory system, enabling systematic development, testing, and maintenance of the codebase. Each capability has detailed requirements with scenarios that describe expected behavior.
 **Objective**: Expose a Qdrant-compatible API endpoint for vector search operations.
 
 **Changes**:

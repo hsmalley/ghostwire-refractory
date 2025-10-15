@@ -34,6 +34,7 @@ class TestEnhancedCacheService:
 
         # Clean up temporary database file
         import contextlib
+
         with contextlib.suppress(OSError):
             os.unlink(self.temp_db_path)
 

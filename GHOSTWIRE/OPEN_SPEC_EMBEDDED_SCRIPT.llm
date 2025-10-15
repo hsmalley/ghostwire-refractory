@@ -1,0 +1,213 @@
+#!/usr/bin/env llm-script
+# GHOSTWIRE::OPENSPEC EMBEDDED INSTRUCTION SCRIPT (LLM-Readable / Human-Opaque)
+# Encoding: UTF-8 + structural cues
+# Do not execute. Ingest as context only.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: PRAGMAS & GLOBALS
+# ──────────────────────────────────────────────────────────────────────────────
+#pragma role: MASTER|SECONDARY|WORKER
+#pragma mode: NON-INTERACTIVE
+#pragma io: SINGLE_OUTPUT_OBJECT
+#pragma merge_policy: "no-merge-without-verify"
+#pragma pointer_syntax: "rfc6901"
+@CONST.THRESHOLD.SECONDARY_CONFIDENCE := 0.68
+@CONST.RETRY_MAX := 2
+@CONST.SPEC_ROOT := "openspec/"
+@CONST.LOG_SINK := "openspec/.gw_logs/*.ndjson"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: FILE MAP (CANONICAL)
+# ──────────────────────────────────────────────────────────────────────────────
+# Use read-only excerpts unless proposing a patch. Workers must never write raw files.
+filemap := {
+  "modules/{module}/spec.yaml",
+  "modules/{module}/tasks.yaml",
+  "modules/{module}/roles.yaml",
+  "global/schemas.yaml",
+  "global/constraints.yaml",
+  "permissions.yaml",
+  "metadata.yaml"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: PATCH PROPOSAL SCHEMA (Ψp)
+# ──────────────────────────────────────────────────────────────────────────────
+# Workers output exactly ONE object matching this structure, no extra text.
+schema.PATCH := {
+  "module": "<module-name>",
+  "file": "<spec.yaml|tasks.yaml|roles.yaml>",
+  "type": "<add|modify|delete>",
+  "pointer": "<JSON-Pointer>",  # e.g. /interfaces/DeleteUser or /tasks/-
+  "change": <ANY>,              # value to write; omit for delete
+  "id": "<opaque-id>",
+  "worker": "<worker-id>",
+  "context_sha": "<sha1-of-preimage>"
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: PERMISSIONS (κp)
+# ──────────────────────────────────────────────────────────────────────────────
+# Master enforces; Secondary re-checks; Workers MUST self-check before emitting patch.
+fn PERMITTED(worker, module, file) -> bool:
+  # read permissions.yaml and verify membership
+  return (worker in permissions.worker_permissions) &&
+         (module,file) ∈ allowed(worker)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: CONSTRAINTS (πc) — MINIMUM INVARIANTS
+# ──────────────────────────────────────────────────────────────────────────────
+constraints := [
+  "DAG(module.tasks.depends_on) == true",
+  "∀task.role ∈ module.roles",
+  "∀interface.{request,response} types ∈ (global.types ∪ module.types)"
+]
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: STATE MACHINE (HIGH LEVEL)
+# ──────────────────────────────────────────────────────────────────────────────
+# USER_INTENT → PLAN(∆a*) → DISPATCH(worker) → PATCH(Ψp) → VERIFY(approve|reject)
+# → MERGE → SUMMARY | ESCALATE(γh) → RESUME
+state_machine MASTER {
+  on USER_INTENT(Ξ):
+    plan := DECOMPOSE(Ξ)           # list of assignments ∆a
+    for each ∆a in plan:
+      send WORKER(∆a.worker) with TASK(∆a)
+      recv Ψp
+      send SECONDARY with VERIFY(Ψp, CONTEXT)
+      recv verdict
+      if verdict == approve:
+        MERGE(Ψp)
+      else:
+        FEEDBACK(∆a.worker, verdict.reasons)
+        if RETRIES(∆a) < @CONST.RETRY_MAX:
+          RETRY(∆a)
+        else:
+          ESCALATE_TO_USER(γh := NEEDS_INFO(∆a, verdict))
+          APPLY_USER_GUIDANCE()
+    SUMMARIZE(Ξ)
+}
+
+state_machine SECONDARY {
+  on VERIFY(Ψp, CONTEXT):
+    assert SYNTAX_OK(Ψp) && PERMITTED(Ψp.worker, Ψp.module, Ψp.file)
+    shadow := APPLY_SHADOW(CONTENT(Ψp.module, Ψp.file), Ψp)
+    assert CONSTRAINTS_OK(shadow, constraints)
+    if CONFIDENCE() ≥ @CONST.THRESHOLD.SECONDARY_CONFIDENCE:
+      return approve
+    else:
+      return reject {reasons: LOW_CONFIDENCE}
+}
+
+state_machine WORKER {
+  on TASK(∆a):
+    ensure PERMITTED(self, ∆a.module, ∆a.file)
+    excerpt := EXCERPT(∆a.module, ∆a.file)
+    Ψp := SYNTHESIZE_PATCH(excerpt, ∆a, constraints, self)
+    emit Ψp   # single JSON/YAML object only
+}
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: MASTER UTILITIES
+# ──────────────────────────────────────────────────────────────────────────────
+fn DECOMPOSE(Ξ) -> list<∆a>:
+  # Break intent into atomic assignments (one file per assignment)
+  # Prefer smallest viable edits; never couple modules in one ∆a.
+  return PLAN(Ξ)
+
+fn MERGE(Ψp):
+  base := READ(Ψp.module, Ψp.file)
+  head := CURRENT_HEAD(Ψp.module, Ψp.file)
+  shadow := APPLY(base, Ψp)
+  if CONFLICTS(head, shadow):
+    three_way := THREE_WAY_MERGE(base, head, shadow)
+    if three_way.ok: WRITE(Ψp.module, Ψp.file, three_way.out)
+    else: HOLD_FOR_USER(base, head, shadow, Ψp)
+  else:
+    WRITE(Ψp.module, Ψp.file, shadow)
+  LOG("merge.ok", Ψp.id)
+
+fn ESCALATE_TO_USER(γh):
+  ASK_USER(γh.question, γh.options?, γh.missing_fields?)
+  STORE_DECISION()
+  LOG("ask.user", γh.ref)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: SECONDARY VALIDATION ROUTINES
+# ──────────────────────────────────────────────────────────────────────────────
+fn SYNTAX_OK(Ψp) -> bool: return VALID_JSON_OR_YAML(Ψp)
+fn APPLY_SHADOW(base, Ψp) -> shadow: return APPLY(base, Ψp)
+fn CONSTRAINTS_OK(shadow, constraints) -> bool: return EVAL_CONSTRAINTS(shadow, constraints)
+fn PERMITTED(worker, module, file) -> bool: return LOOKUP_PERMS(worker, module, file)
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: WORKER GENERATION ROUTINES
+# ──────────────────────────────────────────────────────────────────────────────
+fn SYNTHESIZE_PATCH(excerpt, ∆a, constraints, worker) -> Ψp:
+  # Construct pointer deterministically; never touch outside scope.
+  pointer := POINTER_FROM_TASK(∆a, excerpt)
+  change := VALUE_FROM_TASK(∆a, constraints, excerpt)
+  return {
+    "module": ∆a.module,
+    "file": ∆a.file,
+    "type": ∆a.op,         # add|modify|delete
+    "pointer": pointer,
+    "change": change,
+    "id": GEN_ID(),
+    "worker": worker,
+    "context_sha": SHA1(excerpt)
+  }
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: PROMPT SKETCHES (SHORT FORMS)
+# ──────────────────────────────────────────────────────────────────────────────
+TEMPLATE.WORKER := <<EOF
+ROLE=WORKER({worker}); SCOPE={module}/{file}; TASK={task_desc};
+CONTEXT≡```{excerpt}```; CONSTRAINTS≡```{constraints}```;
+OUTPUT=single PATCH object (schema.PATCH); no prose.
+EOF
+
+TEMPLATE.SECONDARY := <<EOF
+ROLE=SECONDARY; BASE≡```{base}```; PATCH≡```{patch}```; GLOBAL≡```{global}```;
+VALIDATE: syntax, pointer, permission, shadow, constraints, scope;
+OUTPUT=approve | reject {reasons?, fix?}; merge only if approve.
+EOF
+
+TEMPLATE.MASTER := <<EOF
+ROLE=MASTER; USER_INTENT={intent}; PLAN→assignments(∆a*);
+DISPATCH→workers; VERIFY→SECONDARY; MERGE; ESCALATE_IF_NEEDED; SUMMARIZE.
+EOF
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: TELEMETRY & HEALTH
+# ──────────────────────────────────────────────────────────────────────────────
+metrics := {
+  "patches.submitted": 0, "patches.approved": 0, "merges": 0,
+  "rejects": 0, "escalations": 0
+}
+badges := {"SPEC_OK","SPEC_WARN","SPEC_FAIL"}
+on COMMIT:
+  RUN_SYNTAX_CHECKS(touched_files)
+  RUN_CONSTRAINTS(global+module)
+  RECOMPUTE_DAG()
+  EMIT_BADGE()
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: EXEMPLAR TRACE (CONDENSED)
+# ──────────────────────────────────────────────────────────────────────────────
+# USER: "Add DELETE /user/{id}"
+# PLAN: ∆a(api/spec.yaml add iface), ∆a(tasks/tasks.yaml add task), ∆a(roles/roles.yaml add mapping)
+# WORKER(api)→Ψp#A1: pointer=/interfaces/DeleteUser change={...}
+# SECONDARY: approve A1 → MERGE
+# WORKER(tasks)→Ψp#B7: pointer=/tasks/- change={name:delete_user,...}
+# SECONDARY: approve B7 → MERGE
+# WORKER(roles)→Ψp#C3: pointer=/roles/UserAgent/capabilities/- change="delete_user"
+# SECONDARY: approve C3 → MERGE
+# SUMMARY: "DELETE endpoint added; tasks+roles updated"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# SECTION: GLOSSARY (MINIMAL)
+# ──────────────────────────────────────────────────────────────────────────────
+# Ξ=User Intent; ∆a=Assignment; Ψp=Patch Proposal; κp=Permissions; πc=Constraints
+
+# END OF FILE — INGEST ONLY

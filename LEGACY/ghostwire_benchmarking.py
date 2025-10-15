@@ -1,16 +1,15 @@
 import argparse
 import asyncio
+
+# USAGE:
+# python ghostwire-benchmarking.py --controller http://localhost:8000 --repeat 1000000
+# python ghostwire-benchmarking.py --controller http://localhost:8000 --threads 16 --repeat 100
+import os
 import time
 
 import httpx
 import numpy as np
 import psutil
-
-# USAGE:
-# python ghostwire-benchmarking.py --controller http://localhost:8000 --repeat 1000000
-# python ghostwire-benchmarking.py --controller http://localhost:8000 --threads 16 --repeat 100
-
-import os
 
 OLLAMA_URL = "http://localhost:11434"
 CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000")
@@ -112,7 +111,7 @@ async def controller_embed(text: str):
 
 
 async def run_controller_benchmark():
-    print(f"\n🌐 Running controller benchmark phase...")
+    print("\n🌐 Running controller benchmark phase...")
     print(f"🔍 Starting benchmark for controller at {CONTROLLER_URL}")
     print("=" * 80)
     await detect_controller_routes()

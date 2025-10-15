@@ -25,7 +25,8 @@ import os
 import re
 import sqlite3
 import time
-from typing import Any, AsyncGenerator, List, Optional, Tuple
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import hnswlib
 import httpx
@@ -510,7 +511,7 @@ def _normalize(v: np.ndarray) -> np.ndarray:
 
 
 def upsert_memory_with_embedding(
-    session_id: str, prompt_text: str, answer_text: str, embedding: List[float]
+    session_id: str, prompt_text: str, answer_text: str, embedding: list[float]
 ) -> None:
     """
     Etch a conversation turn into the archive.
@@ -551,8 +552,8 @@ def upsert_memory_with_embedding(
 
 
 def query_similar_by_embedding(
-    session_id: str, embedding: List[float], limit: int = 5
-) -> List[Tuple[str, str]]:
+    session_id: str, embedding: list[float], limit: int = 5
+) -> list[tuple[str, str]]:
     """
     Retrieve prior whispers most aligned with the incoming embedding.
 
@@ -610,7 +611,7 @@ def query_similar_by_embedding(
             np.dot(a, b) / ((np.linalg.norm(a) + 1e-8) * (np.linalg.norm(b) + 1e-8))
         )
 
-    scored: List[Tuple[float, str, str]] = []
+    scored: list[tuple[float, str, str]] = []
     for p, a, blob in rows:
         if blob is None:
             continue
@@ -664,7 +665,7 @@ class VectorQueryRequest(BaseModel):
 
 
 async def ask_streaming_with_embedding(
-    session_id: str, text: str, embedding: List[float]
+    session_id: str, text: str, embedding: list[float]
 ) -> AsyncGenerator[str, None]:
     """
     Orchestrate recall + generation.
@@ -819,9 +820,6 @@ async def generate_embedding(text_input: str, model: str = "embeddinggemma"):
         return []
 
 
-from fastapi.responses import JSONResponse
-
-
 @app.post("/v1/embeddings")
 async def v1_embeddings(req: dict):
     """
@@ -968,9 +966,6 @@ async def v1_models():
 # -------------------------------
 # OpenAI-compatible /v1/chat/completions endpoint
 # -------------------------------
-
-from fastapi import Request
-from fastapi.responses import StreamingResponse
 
 
 # OpenAI-style error response helper
@@ -1227,7 +1222,7 @@ class QPointStruct(BaseModel):
 class QSearchRequest(BaseModel):
     vector: list[float]
     top: int = 5
-    filter: Optional[dict[str, Any]] = None
+    filter: dict[str, Any] | None = None
 
 
 # --- Qdrant index request model ---
@@ -1657,7 +1652,7 @@ async def api_delete(body: dict = Body(...)):
 # Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}
 @app.post("/collections/{collection_name}/points/delete")
 async def qdrant_delete_points(
-    collection_name: str, request: Request, wait: Optional[bool] = False
+    collection_name: str, request: Request, wait: bool | None = False
 ):
     """Qdrant-compatible delete: supports {"filter":{"must":[]}} or {"filter":{"must":[{"key":"id","match":{"any":[...]}}]}}"""
     try:
@@ -1712,7 +1707,7 @@ async def qdrant_delete_points(
 async def q_create_index_alias(
     collection_name: str,
     request: Request,
-    wait: Optional[bool] = False,
+    wait: bool | None = False,
 ):
     """Diagnose Kilo index creation requests."""
     try:
@@ -1781,7 +1776,7 @@ async def q_upsert_points_debug(collection_name: str, request: Request):
     "/collections/{collection_name}/points/delete", methods=["POST", "DELETE", "PUT"]
 )
 async def q_delete_points_debug_all(
-    collection_name: str, request: Request, wait: Optional[bool] = False
+    collection_name: str, request: Request, wait: bool | None = False
 ):
     """Debug-only delete endpoint: logs everything, always returns OK."""
     content_type = request.headers.get("content-type", "")

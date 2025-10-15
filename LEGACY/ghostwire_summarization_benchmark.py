@@ -1,13 +1,12 @@
 # ghostwire_summarization_benchmark.py
 
 import asyncio
+import os
 import time
 
 import httpx
 import numpy as np
 from rouge_score import rouge_scorer
-
-import os
 
 CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000")
 CHAT_ROUTE = (

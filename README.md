@@ -152,6 +152,12 @@ PYTHONPATH=python uv run python -m python.benchmarks.rag_benchmarks
 PYTHONPATH=python uv run python -m python.benchmarks.summarization_benchmarks
 ```
 
+Run the comprehensive model comparison benchmark with GHOSTWIRE scoring:
+
+```bash
+PYTHONPATH=python uv run python -m python.benchmarks.model_comparison_benchmark
+```
+
 Or run all benchmarks from the project root:
 
 ```bash
@@ -159,9 +165,49 @@ export PYTHONPATH=python
 uv run python -m python.benchmarks.embedding_benchmarks
 uv run python -m python.benchmarks.rag_benchmarks
 uv run python -m python.benchmarks.summarization_benchmarks
+uv run python -m python.benchmarks.model_comparison_benchmark
 ```
 
+The benchmarking suite now includes:
+- **Embedding Benchmarks**: Performance and stability of text embeddings with GHOSTWIRE scoring
+- **RAG Benchmarks**: Retrieval-Augmented Generation quality and performance with GHOSTWIRE scoring
+- **Summarization Benchmarks**: Text summarization quality and efficiency with GHOSTWIRE scoring
+- **Model Comparison Benchmark**: Comprehensive comparison of multiple models using overall GHOSTWIRE scores
+
 Note: Benchmarks require a running GhostWire Refractory server to connect to.
+
+## Orchestrator System
+
+The GhostWire Refractory includes an advanced multi-LLM orchestration system that coordinates multiple language models to process complex user requests using a Master/Worker/Secondary Control pattern.
+
+### Using the Orchestrator
+
+Run the orchestrator system:
+
+```bash
+# Process a request through the multi-LLM orchestrator
+uv run python -m python.ghostwire.cli orchestrate --request "Analyze this code and suggest improvements"
+
+# Or use the API endpoint directly
+curl -X POST http://localhost:8000/api/v1/orchestrator/orchestrate \
+  -H "Content-Type: application/json" \
+  -d '{"user_request": "Perform a comprehensive analysis of the system"}'
+```
+
+### Orchestrator Features
+
+- **Task Decomposition**: Breaks complex requests into subtasks for distribution
+- **Multi-LLM Coordination**: Distributes tasks across multiple LLM endpoints
+- **Permission Management**: Role-based access control for orchestrated tasks
+- **Safe Code Patching**: Apply changes to code with validation and backup
+- **Benchmark Integration**: Run benchmarks across multiple models simultaneously
+- **GHOSTWIRE Scoring**: Calculate standardized scores across orchestrated tasks
+- **Formal Patch Proposals**: Follow OpenSpec schema for structured changes (Ψp)
+- **Secondary Validation**: Multi-layer verification with constraint checking (φS)
+- **Task Dependency Graphs**: Manage complex task relationships (τg)
+- **Advanced Merging**: Three-way merge with conflict detection
+- **Telemetry & Health**: Real-time metrics and system health checks
+- **Spec-Driven Development**: Formal specification management and validation
 
 ## Testing
 

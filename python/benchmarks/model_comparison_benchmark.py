@@ -10,7 +10,6 @@ import sys
 import time
 
 import httpx
-import psutil
 import numpy as np
 
 # Add the python directory to the path to access ghostwire modules
@@ -21,13 +20,12 @@ from python.ghostwire.utils.ghostwire_scoring import (
     compute_general_ghostwire_score,
     compute_rag_ghostwire_score,
     compute_summarization_ghostwire_score,
-    format_benchmark_results_with_scores
 )
 
 
 class ModelComparisonBenchmark:
     """Benchmark class for comparing different models using GHOSTWIRE scores"""
-    
+
     def __init__(self, controller_url: str = None):
         self.controller_url = controller_url or "http://localhost:8000"
         self.client = httpx.AsyncClient(timeout=60.0)
@@ -50,7 +48,7 @@ class ModelComparisonBenchmark:
                 response.raise_for_status()
                 latency = time.perf_counter() - start_time
                 latencies.append(latency)
-                
+
                 # Store the embedding to calculate stability
                 data = response.json()
                 embedding = data.get("data", [{}])[0].get("embedding", [])
@@ -61,7 +59,7 @@ class ModelComparisonBenchmark:
                 continue
 
         avg_latency = sum(latencies) / len(latencies) if latencies else float("inf")
-        
+
         # Calculate embedding stability (consistency) using cosine similarity
         stability = 1.0  # Default perfect stability
         if len(embeddings) > 1:
@@ -70,7 +68,8 @@ class ModelComparisonBenchmark:
                 for j in range(i + 1, len(embeddings)):
                     if len(embeddings[i]) > 0 and len(embeddings[j]) > 0:
                         similarity = np.dot(embeddings[i], embeddings[j]) / (
-                            np.linalg.norm(embeddings[i]) * np.linalg.norm(embeddings[j])
+                            np.linalg.norm(embeddings[i])
+                            * np.linalg.norm(embeddings[j])
                         )
                         similarities.append(similarity)
             stability = np.mean(similarities) if similarities else 1.0
@@ -78,7 +77,7 @@ class ModelComparisonBenchmark:
         return {
             "avg_latency": avg_latency,
             "stability": stability,
-            "memory_usage": 0.0  # Placeholder, would need actual measurement
+            "memory_usage": 0.0,  # Placeholder, would need actual measurement
         }
 
     async def test_rag_performance_for_model(
@@ -117,8 +116,8 @@ class ModelComparisonBenchmark:
                 continue
 
         avg_latency = sum(latencies) / len(latencies) if latencies else float("inf")
-        
-        # Placeholder values for quality metrics - in a real implementation, 
+
+        # Placeholder values for quality metrics - in a real implementation,
         # we would evaluate the quality of the response
         quality = 0.75  # Placeholder quality score
         hallucination_rate = 0.15  # Placeholder hallucination rate (15%)
@@ -127,7 +126,7 @@ class ModelComparisonBenchmark:
             "avg_latency": avg_latency,
             "quality": quality,
             "hallucination_rate": hallucination_rate,
-            "memory_usage": 0.0  # Placeholder, would need actual measurement
+            "memory_usage": 0.0,  # Placeholder, would need actual measurement
         }
 
     async def test_summarization_performance_for_model(
@@ -145,7 +144,7 @@ class ModelComparisonBenchmark:
                     json={
                         "session_id": "summarization_comparison",
                         "text": f"Please summarize the following text: {text}",
-                        "model": model
+                        "model": model,
                     },
                 )
                 response.raise_for_status()
@@ -157,7 +156,7 @@ class ModelComparisonBenchmark:
                 continue
 
         avg_latency = sum(latencies) / len(latencies) if latencies else float("inf")
-        
+
         # Placeholder values for quality metrics
         quality = 0.70  # Placeholder quality score
         hallucination_rate = 0.10  # Placeholder hallucination rate (10%)
@@ -168,7 +167,7 @@ class ModelComparisonBenchmark:
             "quality": quality,
             "hallucination_rate": hallucination_rate,
             "length_penalty": length_penalty,
-            "memory_usage": 0.0  # Placeholder, would need actual measurement
+            "memory_usage": 0.0,  # Placeholder, would need actual measurement
         }
 
     async def run_model_comparison(self):
@@ -178,7 +177,9 @@ class ModelComparisonBenchmark:
         print(f"Models to be tested: {self.models}")
         print("=" * 80)
 
-        test_embedding_text = "This is a test sentence for embedding performance evaluation."
+        test_embedding_text = (
+            "This is a test sentence for embedding performance evaluation."
+        )
         test_rag_query = "What is artificial intelligence?"
         test_summarization_text = (
             "Artificial intelligence (AI) is intelligence demonstrated by machines, "
@@ -216,28 +217,32 @@ class ModelComparisonBenchmark:
             summ_results = await self.test_summarization_performance_for_model(
                 model, test_summarization_text
             )
-            print(f"    Average summarization latency: {summ_results['avg_latency']:.4f}s")
+            print(
+                f"    Average summarization latency: {summ_results['avg_latency']:.4f}s"
+            )
             print(f"    Summarization quality: {summ_results['quality']:.4f}")
-            print(f"    Summarization hallucination rate: {summ_results['hallucination_rate']:.4f}")
+            print(
+                f"    Summarization hallucination rate: {summ_results['hallucination_rate']:.4f}"
+            )
 
             # Calculate individual GHOSTWIRE scores
             embedding_score = compute_general_ghostwire_score(
-                latency=embed_results['avg_latency'],
-                stability=embed_results['stability'],
-                memory_usage=embed_results['memory_usage']
+                latency=embed_results["avg_latency"],
+                stability=embed_results["stability"],
+                memory_usage=embed_results["memory_usage"],
             )
 
             rag_score = compute_rag_ghostwire_score(
-                quality=rag_results['quality'],
-                hallucination=rag_results['hallucination_rate'],
-                latency=rag_results['avg_latency']
+                quality=rag_results["quality"],
+                hallucination=rag_results["hallucination_rate"],
+                latency=rag_results["avg_latency"],
             )
 
             summarization_score = compute_summarization_ghostwire_score(
-                quality=summ_results['quality'],
-                hallucination=summ_results['hallucination_rate'],
-                length_penalty=summ_results['length_penalty'],
-                latency=summ_results['avg_latency']
+                quality=summ_results["quality"],
+                hallucination=summ_results["hallucination_rate"],
+                length_penalty=summ_results["length_penalty"],
+                latency=summ_results["avg_latency"],
             )
 
             # Overall score - average of all benchmark scores
@@ -250,19 +255,19 @@ class ModelComparisonBenchmark:
             print(f"    Overall Score: {overall_score:.4f}")
 
             results[model] = {
-                "embedding_latency": embed_results['avg_latency'],
-                "embedding_stability": embed_results['stability'],
+                "embedding_latency": embed_results["avg_latency"],
+                "embedding_stability": embed_results["stability"],
                 "embedding_score": embedding_score,
-                "rag_latency": rag_results['avg_latency'],
-                "rag_quality": rag_results['quality'],
-                "rag_hallucination_rate": rag_results['hallucination_rate'],
+                "rag_latency": rag_results["avg_latency"],
+                "rag_quality": rag_results["quality"],
+                "rag_hallucination_rate": rag_results["hallucination_rate"],
                 "rag_score": rag_score,
-                "summarization_latency": summ_results['avg_latency'],
-                "summarization_quality": summ_results['quality'],
-                "summarization_hallucination_rate": summ_results['hallucination_rate'],
-                "summarization_length_penalty": summ_results['length_penalty'],
+                "summarization_latency": summ_results["avg_latency"],
+                "summarization_quality": summ_results["quality"],
+                "summarization_hallucination_rate": summ_results["hallucination_rate"],
+                "summarization_length_penalty": summ_results["length_penalty"],
                 "summarization_score": summarization_score,
-                "overall_score": overall_score
+                "overall_score": overall_score,
             }
 
         print("\n" + "=" * 80)
@@ -270,9 +275,13 @@ class ModelComparisonBenchmark:
         print("=" * 80)
 
         # Sort models by overall score
-        sorted_models = sorted(results.items(), key=lambda x: x[1]['overall_score'], reverse=True)
+        sorted_models = sorted(
+            results.items(), key=lambda x: x[1]["overall_score"], reverse=True
+        )
 
-        print(f"{'Rank':<4} {'Model':<25} {'Embedding':<10} {'RAG':<10} {'Summarization':<12} {'Overall':<10}")
+        print(
+            f"{'Rank':<4} {'Model':<25} {'Embedding':<10} {'RAG':<10} {'Summarization':<12} {'Overall':<10}"
+        )
         print("-" * 80)
 
         for i, (model, data) in enumerate(sorted_models, 1):
@@ -301,14 +310,14 @@ async def main():
     parser.add_argument(
         "--models",
         type=str,
-        nargs='+',
-        help="Specific models to test (if not provided, uses models from settings)"
+        nargs="+",
+        help="Specific models to test (if not provided, uses models from settings)",
     )
 
     args = parser.parse_args()
 
     benchmark = ModelComparisonBenchmark(controller_url=args.controller)
-    
+
     # If specific models were provided, override the default list
     if args.models:
         benchmark.models = args.models

@@ -55,5 +55,5 @@ async def test_retrieval_benchmark():
 async def test_summarization_benchmark():
     """Run the summarization benchmark."""
     result = await run_summarization_benchmark()
-    assert result and all(len(s['summary']) > 0 for s in result)
+    assert result and all(len(s["summary"]) > 0 for s in result)
     print("\n✅ Summarization benchmark completed successfully.")

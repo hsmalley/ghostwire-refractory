@@ -136,6 +136,7 @@ class TestEnhancedRAGService:
 
         # Run the async test
         import contextlib
+
         with contextlib.suppress(Exception):
             asyncio.run(test_async())
             # Should have attempted to cache the response

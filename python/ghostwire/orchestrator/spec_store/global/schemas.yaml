@@ -1,0 +1,45 @@
+# Global schemas for the GhostWire orchestrator system
+types:
+  orchestration_request:
+    type: "object"
+    properties:
+      user_request:
+        type: "string"
+        description: "The original user request"
+      context:
+        type: "object"
+        description: "Additional context information"
+        optional: true
+      session_token:
+        type: "string" 
+        description: "Session token for authentication"
+        optional: true
+  patch_proposal:
+    type: "object"
+    properties:
+      module:
+        type: "string"
+        description: "Target module name"
+      file:
+        type: "string"
+        description: "Target file in module"
+      type:
+        type: "string"
+        enum: ["add", "modify", "delete"]
+        description: "Type of change"
+      pointer:
+        type: "string"
+        description: "JSON Pointer for the change location"
+      change:
+        type: "any"
+        description: "Value to write (omit for delete)"
+        optional: true
+      id:
+        type: "string"
+        description: "Opaque identifier for patch"
+      worker:
+        type: "string"
+        description: "Worker identifier"
+      context_sha:
+        type: "string"
+        description: "SHA1 of preimage context"

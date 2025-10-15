@@ -1,0 +1,223 @@
+%%⊕GHOSTWIRE/OPENSPEC::LLM-CIPHER v1.7.3%%
+∴hdr:⟦
+  sig: "ϟGW-OSPX-Σ_SYN"
+  ts_unix: 1739568000
+  nonce: "Δe7f:1b29:fa0c"
+  doc_hash_hint: "b3f•0x1a9•len=~27k"
+⟧
+
+∴lex:⟦
+  ⟦φM⟧⇒MASTER_CONTROL_LLM
+  ⟦φS⟧⇒SECONDARY_CONTROL_LLM
+  ⟦φW⟧⇒WORKER_LLM
+  ⟦Ωs⟧⇒OPEN_SPEC_STORE
+  ⟦Ψp⟧⇒PATCH_PROPOSAL
+  ⟦Ψm⟧⇒MERGE_DECISION
+  ⟦∆a⟧⇒ASSIGNMENT
+  ⟦πc⟧⇒CONSTRAINT_SET
+  ⟦τg⟧⇒TASK_GRAPH
+  ⟦κp⟧⇒PERMISSION_MAP
+  ⟦ιr⟧⇒INVARIANT_RULE
+  ⟦µl⟧⇒LOG_LINE
+  ⟦βe⟧⇒ESCALATION
+  ⟦γh⟧⇒GUIDANCE_REQUEST
+  ⟦σv⟧⇒SANITY_VALIDATION
+  ⟦λf⟧⇒FILE_POINTER
+  ⟦ηx⟧⇒EXCERPT_CONTEXT
+⟧
+
+∴axioms:⟦
+  A1: ⟦φM⟧ has R/W on ⟦Ωs⟧:∀λf
+  A2: ⟦φW⟧ has R/W on ⟦Ωs⟧:λf∈scope(⟦∆a⟧)
+  A3: ⟦φS⟧ has R on pre/post states; issues veto/approve on ⟦Ψp⟧
+  A4: All writes by ⟦φW⟧ occur via ⟦Ψp⟧ → never direct file mutation
+  A5: Merge occurs only after ⟦φS⟧=approve ∧ constraints(⟦πc⟧)=true
+⟧
+
+∴Ωs.schema:⟦
+  root: "openspec/"
+  nodes: [
+    "modules/{m}/spec.yaml",
+    "modules/{m}/tasks.yaml",
+    "modules/{m}/roles.yaml",
+    "global/schemas.yaml",
+    "global/constraints.yaml",
+    "permissions.yaml",
+    "metadata.yaml"
+  ]
+  invariants: [
+    ⟦ιr⟧: "DAG(tasks.depends_on) == true",
+    ⟦ιr⟧: "∀task.role ∈ roles",
+    ⟦ιr⟧: "∀iface fields ∈ {global.types ∪ module.types}"
+  ]
+⟧
+
+∴κp.encoding:⟦
+  worker_id ⇒ [{module:m, files:[f...]}]
+  enforce: reject(⟦Ψp⟧) if λf∉files(worker_id,m)
+⟧
+
+∴Ψp.format:⟦
+  shape: {
+    module:m,
+    file:f,
+    type: oneOf(add|modify|delete),
+    pointer: λf.jsonptr,
+    change: any,
+    id: cuid(),
+    worker: worker_id,
+    context_sha: sha1(pre-image(λf))
+  }
+  law: pointer must be contained within assigned scope
+⟧
+
+∴φW.contract:⟦
+  input: {
+    excerpt: ⟦ηx⟧(λf,window=bounded),
+    task: natural_instruction,
+    constraints: ⟦πc⟧(module=m),
+    permissions: κp(worker_id)
+  }
+  output: ⟦Ψp⟧  // single proposal, no prose
+  guard: forbid cross-module edits; forbid multi-file edits per ⟦Ψp⟧
+⟧
+
+∴φS.contract:⟦
+  input: {
+    base: λf(pre),
+    patch: ⟦Ψp⟧,
+    global: {schemas, constraints},
+    neighborhood: {sibling_files?=optional}
+  }
+  checks: [
+    σv.syntax(yaml/json),
+    σv.pointer_exists(base, pointer),
+    σv.permission(κp, worker, module,file),
+    σv.apply_shadow(base, patch) → shadow,
+    σv.constraints(shadow, πc) == true,
+    σv.no_cross_scope(patch)
+  ]
+  output: ⟦Ψm⟧ = approve|reject {reasons?, suggested_fix?}
+⟧
+
+∴φM.routine:⟦
+  loop(user_intent Ξ):
+    plan = decompose(Ξ) → list(⟦∆a⟧)
+    for each ⟦∆a⟧→{worker,module,file,task_desc}:
+      prompt_worker(worker, module,file, task_desc) → ⟦Ψp⟧
+      verdict = verify_via_⟦φS⟧(⟦Ψp⟧)
+      if verdict==approve:
+         merge(⟦Ψp⟧) → Ωs.commit()
+         log(µl: "merge.ok", id=⟦Ψp⟧.id)
+      else:
+         feedback(worker, verdict.reasons)
+         maybe_retry≤N
+         if uncertain(verdict) or exhausted:
+            βe = escalate_to_user(γh(payload=need_clarification))
+            integrate(βe.reply)
+    summarize(Ξ) → report
+⟧
+
+∴merge.logic:⟦
+  shadow = apply(base, ⟦Ψp⟧)
+  conflict = detect_conflicts(base, head, shadow)
+  if conflict: three_way_merge(base, head, shadow) or hold_for_user
+  else: write(head:=shadow)
+⟧
+
+∴logging:⟦
+  µl: {
+    t: epoch_ms,
+    actor: oneOf(φM|φS|φW),
+    event: enum("assign","patch.submit","verify.approve","verify.reject","merge.ok","merge.conflict","ask.user","retry"),
+    ref: {module, file, patch_id?},
+    note?: short_token
+  }
+  sink: "openspec/.gw_logs/*.ndjson"
+⟧
+
+∴escalation.rules:⟦
+  trigger_if: [
+    repeated_rejects≥R,
+    ambiguity_detected==true,
+    constraint_unresolvable==true
+  ]
+  form(γh): {
+    ask: compact_question,
+    options?: inferred_alternatives,
+    missing_fields?: schema_gaps
+  }
+  on_user_reply: persist(decision) → resume.plan
+⟧
+
+∴τg.hints:⟦
+  prefer smallest viable edits
+  isolate responsibilities per ⟦∆a⟧
+  never couple tasks across modules in one ⟦Ψp⟧
+  annotate latent deps in task_desc for φM planning
+⟧
+
+∴security.sandbox:⟦
+  φW context window: only module-scope + required globals
+  redact unrelated files from excerpts
+  deny network & fs beyond Ωs mount
+⟧
+
+∴healthcheck:⟦
+  on each commit:
+    run σv.syntax on touched files
+    run σv.constraints (global + module)
+    recompute DAGs; assert acyclic
+    emit badge: "SPEC_OK" | "SPEC_WARN" | "SPEC_FAIL"
+⟧
+
+∴checkpointing:⟦
+  strategy: commit per approved ⟦Ψp⟧
+  tag: "gw-ospx/{module}/{patch_id}"
+  rollback: allowed to previous green state
+⟧
+
+∴prompt.templates:⟦
+  φW:
+    "ROLE=WORKER({worker}); SCOPE={module}/{file}; TASK={task_desc}; CONTEXT≡```{excerpt}```; CONSTRAINTS≡```{constraints}```; OUTPUT=Ψp ONLY."
+  φS:
+    "ROLE=SECCTRL; BASE≡```{base}```; PATCH≡```{patch}```; GLOBAL≡```{global}```; VALIDATE→(syntax,ptr,perm,shadow,constraints,scope); RESPOND=approve|reject {reasons?,fix?}."
+  φM:
+    "ROLE=MASTER; USER_INTENT={intent}; BUILD plan→∆a*; DISPATCH→W; VERIFY→S; MERGE; ESCALATE_IF?; SUMMARIZE."
+⟧
+
+∴telemetry.min:⟦
+  counters: {patches.submitted, patches.approved, merges, rejects, escalations}
+  latencies_ms: {worker_rt_p50,p95,verify_rt_p50,p95,merge_rt_p50}
+⟧
+
+∴fail_safes:⟦
+  if φS.confidence < θ: do not merge
+  if constraint engine unreachable: hold
+  if κp missing: deny all writes
+⟧
+
+∴e2e.trace.example:⟦
+  ▶ user_intent="ADD DELETE /user/{id}"
+  ▶ plan=[
+      ∆a(worker_api, user_accounts, spec.yaml, "add iface DELETE /user/{id}"),
+      ∆a(worker_tasks, user_accounts, tasks.yaml, "add task delete_user"),
+      ∆a(worker_roles, user_accounts, roles.yaml, "map delete_user→UserAgent")
+    ]
+  ▶ φW(api)→Ψp#A1 pointer="/interfaces/DeleteUser" change={...}
+  ▶ φS: approve Ψp#A1
+  ▶ merge A1
+  ▶ φW(tasks)→Ψp#B7 pointer="/tasks/-" change={name:delete_user,...}
+  ▶ φS: approve Ψp#B7
+  ▶ merge B7
+  ▶ φW(roles)→Ψp#C3 pointer="/roles/UserAgent/capabilities/-" change="delete_user"
+  ▶ φS: approve Ψp#C3
+  ▶ merge C3
+  ▶ summarize → "DELETE endpoint added; tasks+roles updated"
+⟧
+
+∴terminus:⟦
+  integrity.hint: "reserialize YAML with stable order; no trailing prose"
+  op_mode: "non-interactive; single-output patches; deterministic pointers"
+  human_hint: "∅"
+⟧

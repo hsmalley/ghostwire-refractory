@@ -19,7 +19,7 @@ def main():
         "command",
         nargs="?",
         default="serve",
-        choices=["serve", "benchmark"],
+        choices=["serve", "benchmark", "orchestrate"],
         help="Command to execute (default: serve)",
     )
 
@@ -36,57 +36,48 @@ def main():
         "--reload", action="store_true", help="Enable auto-reload on code changes"
     )
 
-    # Parse arguments
+    # Orchestrator command arguments
+    parser.add_argument(
+        "--request", type=str, help="User request to process through orchestrator"
+    )
+
     args = parser.parse_args()
 
-    if args.command == "benchmark":
-        # Run token usage benchmarks
-        try:
-            import asyncio
+    if args.command == "serve":
+        from .main import create_app, start_server
 
-            from .utils.token_benchmark import TokenBenchmarkSuite
+        app = create_app()
+        start_server(app, host=args.host, port=args.port, reload=args.reload)
+    elif args.command == "benchmark":
+        from .cli.benchmark_cli import main as benchmark_main
 
-            print("Running GhostWire Refractory Token Usage Benchmarks...")
-            print("=" * 60)
+        sys.exit(benchmark_main())
+    elif args.command == "orchestrate":
+        if not args.request:
+            print("Error: --request is required for orchestrate command")
+            sys.exit(1)
 
-            suite = TokenBenchmarkSuite()
-            asyncio.run(suite.run_all_benchmarks())
-            report = suite.generate_report()
-            print(report)
-            suite.save_report("token_benchmark_report.json")
-            print("\nReport saved to token_benchmark_report.json")
+        # Import and run orchestrator
+        import asyncio
 
-            return 0
-        except KeyboardInterrupt:
-            print("\nBenchmark interrupted by user")
-            return 130
-        except Exception as e:
-            print(f"Error running benchmarks: {e}")
-            return 1
+        from .orchestrator.integration import create_ghostwire_orchestrator
 
-    else:  # serve command
-        # Start the FastAPI server
-        try:
-            import uvicorn
-
-            from .main import app
-
-            print(f"Starting GhostWire Refractory server on {args.host}:{args.port}...")
-
-            uvicorn.run(
-                app,
-                host=args.host,
-                port=args.port,
-                reload=args.reload,
+        async def run_orchestration():
+            orchestrator = create_ghostwire_orchestrator(
+                llm_endpoints=[settings.LOCAL_OLLAMA_URL],
+                default_model=settings.DEFAULT_OLLAMA_MODEL,
             )
 
-            return 0
-        except KeyboardInterrupt:
-            print("\nServer stopped by user")
-            return 0
-        except Exception as e:
-            print(f"Error starting server: {e}")
-            return 1
+            result = await orchestrator.process_request(args.request)
+            print(f"Orchestration Result: {result['response']}")
+
+            await orchestrator.close()
+
+        asyncio.run(run_orchestration())
+    else:
+        print(f"Unknown command: {args.command}")
+        parser.print_help()
+        sys.exit(1)
 
 
 if __name__ == "__main__":

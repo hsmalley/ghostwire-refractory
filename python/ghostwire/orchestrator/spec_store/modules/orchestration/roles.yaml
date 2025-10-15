@@ -1,0 +1,31 @@
+# Orchestration module roles
+roles:
+  system_admin:
+    permissions:
+      - "admin"
+      - "execute"
+      - "write"
+      - "read"
+    description: "Full system administration rights"
+  orchestrator_worker:
+    permissions:
+      - "execute"
+      - "read"
+    capabilities:
+      - "orchestrate_user_request"
+      - "propose_patch"
+    description: "Can execute orchestration tasks and propose patches"
+  benchmark_operator:
+    permissions:
+      - "execute"
+      - "read"
+    description: "Can run benchmarks and read results"
+  developer:
+    permissions:
+      - "write"
+      - "read" 
+    description: "Can modify code and read data"
+  user:
+    permissions:
+      - "read"
+    description: "Basic read access"

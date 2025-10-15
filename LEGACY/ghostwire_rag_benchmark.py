@@ -1,11 +1,8 @@
 import asyncio
-import json
+import os
 import time
-from typing import List, Tuple
 
 import httpx
-
-import os
 
 CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000")
 EMBED_ROUTE = "/v1/embeddings"
@@ -28,7 +25,7 @@ MODELS = [
 TOP_K = 2
 
 # Dataset of (question, ground_truth_context) pairs for evaluation
-DATASET: List[Tuple[str, str]] = [
+DATASET: list[tuple[str, str]] = [
     (
         "What is superposition in quantum computing?",
         "Quantum computers exploit superposition and entanglement to solve problems.",
@@ -53,7 +50,7 @@ def compute_ghostwire_score(
 
 async def retrieve_context(
     client: httpx.AsyncClient, question: str, model: str
-) -> List[str]:
+) -> list[str]:
     """
     Calls the retrieval-only endpoint to get top-k contexts for the question.
     """

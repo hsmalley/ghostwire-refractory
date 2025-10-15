@@ -290,12 +290,89 @@ CONTEXT_COMPRESSION_STRATEGY = "hybrid"  # Adjust strategy
 SUMMARY_COMPRESSION_RATIO = 0.3    # Adjust compression ratio
 ```
 
+## GhostWire GHOSTWIRE Scoring System
+
+In addition to token optimization benchmarks, GhostWire Refractory includes a comprehensive GHOSTWIRE scoring system for evaluating and comparing different AI models across multiple dimensions.
+
+### Overview
+
+The GHOSTWIRE scoring system provides standardized metrics to evaluate and compare AI models based on performance, quality, stability, and efficiency. Each score combines multiple factors into a single normalized value where higher values indicate better performance.
+
+### GHOSTWIRE Score Components
+
+1. **General GHOSTWIRE Score**: Combines latency, stability, and memory usage
+2. **RAG GHOSTWIRE Score**: Evaluates Retrieval-Augmented Generation quality, hallucination rate, and response time
+3. **Retrieval GHOSTWIRE Score**: Assesses retrieval consistency, similarity, and performance
+4. **Summarization GHOSTWIRE Score**: Measures summarization quality, accuracy, and performance
+5. **Comprehensive GHOSTWIRE Score**: Advanced scoring incorporating multiple performance dimensions
+
+### Benchmark Categories
+
+#### 1. Embedding Benchmarks
+- **Data Source**: API requests to `/api/v1/embeddings`
+- **Metrics**: Embedding latency, stability (cosine similarity), memory usage
+- **Test Scenarios**: Short, medium, and long text embeddings
+
+#### 2. RAG Benchmarks
+- **Data Source**: Combined API requests to `/api/v1/embeddings` and `/api/v1/chat/chat_embedding`
+- **Metrics**: Retrieval latency, generation quality, hallucination rate, end-to-end response time
+- **Test Scenarios**: Factual questions, complex queries, conversational tasks
+
+#### 3. Summarization Benchmarks
+- **Data Source**: API requests to `/api/v1/chat/chat_completion`
+- **Metrics**: Summary quality, factual accuracy, compression ratio, generation latency
+- **Test Scenarios**: News articles, technical documents, multi-document summaries
+
+#### 4. Model Comparison Benchmarks
+- **Data Source**: Combined metrics from all benchmark categories
+- **Metrics**: Overall GHOSTWIRE score averaging all categories
+- **Test Scenarios**: Comprehensive evaluation across embedding, RAG, and summarization tasks for multiple models
+
+### Running GHOSTWIRE Benchmarks
+
+```bash
+# Run embedding benchmarks
+python -m python.benchmarks.embedding_benchmarks
+
+# Run RAG benchmarks
+python -m python.benchmarks.rag_benchmarks
+
+# Run summarization benchmarks
+python -m python.benchmarks.summarization_benchmarks
+
+# Run comprehensive model comparison
+python -m python.benchmarks.model_comparison_benchmark
+
+# Run all benchmarks
+python -m python.benchmarks.model_comparison_benchmark
+```
+
+### Example Output with GHOSTWIRE Scores
+
+```
+🏆 GHOSTWIRE SCORES:
+  Embedding Performance Score: 0.7234
+  Memory Storage Performance Score: 0.8456
+  Similarity Search Performance Score: 0.6987
+  Overall GHOSTWIRE Score: 0.7559
+```
+
+### Data Sources
+
+All GHOSTWIRE benchmarking relies on the following data sources:
+
+1. **API Endpoints**: `/api/v1/embeddings`, `/api/v1/chat/chat_embedding`, `/api/v1/chat/chat_completion`, `/api/v1/vectors/query`
+2. **System Metrics**: Memory usage via `psutil`, execution time via `time.perf_counter()`
+3. **Quality Metrics**: Computed using various algorithms (cosine similarity, ROUGE scores, etc.)
+4. **Configuration**: Model settings from `python/ghostwire/config/settings.py`
+
 ## Conclusion
 
-The GhostWire Refractory token optimization benchmarking system provides comprehensive measurement of token usage reduction across multiple optimization layers. By following these instructions, you can verify that all core functionality is working correctly and achieving the expected 40-50% token usage reduction.
+The GhostWire Refractory token optimization and GHOSTWIRE scoring systems provide comprehensive measurement and evaluation capabilities. The token optimization system measures 40-50% token usage reduction, while the GHOSTWIRE scoring system enables fair comparison of AI models across multiple performance dimensions.
 
 Regular benchmarking is recommended to:
 1. Monitor optimization effectiveness
 2. Identify performance regressions
 3. Tune parameters for specific use cases
 4. Validate system upgrades and changes
+5. Compare model performance for specific tasks

@@ -9,8 +9,8 @@ import sys
 import time
 
 import httpx
-import psutil
 import numpy as np
+import psutil
 
 # Add the python directory to the path to access ghostwire modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -18,7 +18,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from python.ghostwire.config.settings import settings
 from python.ghostwire.utils.ghostwire_scoring import (
     compute_general_ghostwire_score,
-    format_benchmark_results_with_scores
+    format_benchmark_results_with_scores,
 )
 
 
@@ -46,7 +46,7 @@ class BenchmarkRunner:
                 response.raise_for_status()
                 latency = time.perf_counter() - start_time
                 latencies.append(latency)
-                
+
                 # Store the embedding to calculate stability
                 data = response.json()
                 embedding = data.get("data", [{}])[0].get("embedding", [])
@@ -57,7 +57,7 @@ class BenchmarkRunner:
                 continue
 
         avg_latency = sum(latencies) / len(latencies) if latencies else float("inf")
-        
+
         # Calculate embedding stability (consistency) using cosine similarity
         stability = 1.0  # Default perfect stability
         if len(embeddings) > 1:
@@ -141,7 +141,11 @@ class BenchmarkRunner:
 
         # Test embedding performance
         print("\n📝 Testing Embedding Performance...")
-        avg_emb_lat, latencies, embedding_stability = await self.test_embedding_performance(
+        (
+            avg_emb_lat,
+            latencies,
+            embedding_stability,
+        ) = await self.test_embedding_performance(
             model="nomic-embed-text",
             text="This is a test sentence for embedding performance evaluation.",
             iterations=5,
@@ -169,31 +173,29 @@ class BenchmarkRunner:
 
         # Calculate GHOSTWIRE scores
         embedding_ghostwire_score = compute_general_ghostwire_score(
-            latency=avg_emb_lat,
-            stability=embedding_stability,
-            memory_usage=memory_diff
+            latency=avg_emb_lat, stability=embedding_stability, memory_usage=memory_diff
         )
-        
+
         storage_ghostwire_score = compute_general_ghostwire_score(
             latency=avg_store_lat,
             stability=1.0,  # Perfect stability for storage
-            memory_usage=memory_diff
+            memory_usage=memory_diff,
         )
-        
+
         search_ghostwire_score = compute_general_ghostwire_score(
             latency=avg_search_lat,
             stability=1.0,  # Assuming perfect stability for search
-            memory_usage=memory_diff
+            memory_usage=memory_diff,
         )
-        
+
         overall_ghostwire_score = compute_general_ghostwire_score(
             # Weighted average of all latencies
             latency=(avg_emb_lat + avg_store_lat + avg_search_lat) / 3,
             stability=embedding_stability,  # Use embedding stability as overall stability
-            memory_usage=memory_diff
+            memory_usage=memory_diff,
         )
 
-        print(f"\n🏆 GHOSTWIRE SCORES:")
+        print("\n🏆 GHOSTWIRE SCORES:")
         print(f"  Embedding Performance Score: {embedding_ghostwire_score:.4f}")
         print(f"  Memory Storage Performance Score: {storage_ghostwire_score:.4f}")
         print(f"  Similarity Search Performance Score: {search_ghostwire_score:.4f}")
@@ -241,7 +243,10 @@ async def main():
     print(f"  Overall GHOSTWIRE Score: {results['overall_ghostwire_score']:.4f}")
 
     # Also print formatted results with GHOSTWIRE scoring
-    print("\n" + format_benchmark_results_with_scores(results, score_function_name="general"))
+    print(
+        "\n"
+        + format_benchmark_results_with_scores(results, score_function_name="general")
+    )
 
 
 if __name__ == "__main__":

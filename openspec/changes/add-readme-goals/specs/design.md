@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Design: README goals summary
 
 Location: `README.md` at repository root

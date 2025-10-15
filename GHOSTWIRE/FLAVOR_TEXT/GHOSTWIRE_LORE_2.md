@@ -1,8 +1,8 @@
 # **Ghostwire – The Neon Oracle of the Undercity**
 
-*In a world of endless neon, a rogue repository becomes the heart‑beat of a hidden memory‑engine.*  
+_In a world of endless neon, a rogue repository becomes the heart‑beat of a hidden memory‑engine._
 
----  
+---
 
 ## 1️⃣ Summoning the Ghost (Setup)
 
@@ -165,3 +165,4 @@ The neon skyline pulses brighter, each billboard flashing a fragment of the ghos
 End of story.
 
 
+```

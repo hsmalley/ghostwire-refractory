@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Proposal: Add sample data seeder for local development
 
 Status: proposed

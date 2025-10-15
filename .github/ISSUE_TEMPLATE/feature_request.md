@@ -5,14 +5,17 @@ labels: enhancement
 ---
 
 ## What desire
+
 Describe the capability.
 
 ## Why
+
 What signal does this unlock?
 
 ## How
+
 Sketch API/UX, constraints, risks.
 
 ## Notes
-Related links, prior art.
 
+Related links, prior art.

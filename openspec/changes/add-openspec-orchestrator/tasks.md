@@ -1,4 +1,5 @@
 ## Implementation
+
 - [x] Create orchestrator directory structure in GHOSTWIRE/openspec_orchestrator/
 - [x] Implement Master component with request coordination logic
 - [x] Implement LLMClient component with multi-service support

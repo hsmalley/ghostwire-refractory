@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: sample data seeder
 
 Capability: developer-experience

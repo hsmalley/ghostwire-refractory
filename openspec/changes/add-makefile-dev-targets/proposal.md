@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Proposal: Add Makefile with common dev targets
 
 Status: proposed

@@ -169,6 +169,7 @@ uv run python -m python.benchmarks.model_comparison_benchmark
 ```
 
 The benchmarking suite now includes:
+
 - **Embedding Benchmarks**: Performance and stability of text embeddings with GHOSTWIRE scoring
 - **RAG Benchmarks**: Retrieval-Augmented Generation quality and performance with GHOSTWIRE scoring
 - **Summarization Benchmarks**: Text summarization quality and efficiency with GHOSTWIRE scoring
@@ -195,6 +196,7 @@ curl http://localhost:8000/api/v1/metrics
 ```
 
 The metrics endpoint provides:
+
 - **API Latency Histograms**: Per-route latency measurements
 - **API Call Counters**: Total number of API calls per route
 - **Process Metrics**: CPU and memory usage statistics
@@ -322,7 +324,6 @@ pre-commit run --all-files
 
 Optional (node/husky): if you prefer Git hooks managed by Husky and lint-staged for JS/TS workflows, add Husky to your project and configure `lint-staged` in `package.json`. This repository currently uses `pre-commit` for Python-centric checks.
 
-
 ## Recent Improvements
 
 ### Code Quality Enhancement (October 2025)
@@ -361,7 +362,6 @@ Optional (node/husky): if you prefer Git hooks managed by Husky and lint-staged 
 
 - Enhanced type hints for better code documentation
 
-
 ## Local Development Helpers
 
 For contributors who prefer a minimal, explicit local workflow without the `uv` workspace helper:
@@ -372,12 +372,37 @@ sh scripts/run_local.sh
 ```
 
 This script will:
+
 - Create and activate a virtual environment
 - Install the package in editable mode
 - Copy `.env.example` to `.env` if no `.env` is present
 - Run the application module
 
 See `scripts/run_local.sh` and `.env.example` for details.
+
+### Sample Data Seeder
+
+For contributors who want to quickly populate the database with sample data for testing and exploration:
+
+```bash
+# Seed the database with sample data
+python scripts/seed_sample_data.py
+
+# Seed with verbose output
+python scripts/seed_sample_data.py --verbose
+
+# Force re-seeding even if data already exists
+python scripts/seed_sample_data.py --force
+```
+
+This script will:
+
+- Create tables if they don't exist
+- Insert sample sessions, messages, and synthetic embeddings
+- Generate realistic sample data that mimics actual usage
+- Populate the database with 15 sample memory entries across 5 sessions
+
+The seeder is idempotent by default and will not duplicate data unless the `--force` flag is used.
 
 ### Makefile Development Targets
 
@@ -442,8 +467,8 @@ This creates 5 sample sessions with multiple conversations each, helping you exp
 
 ---
 
-*This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When contributing, see `CONTRIBUTING.md` for guidance on where to use the project's thematic flavor (neon/cyberpunk, Neon Oracle voice) vs. neutral, public-facing documentation.*
+_This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When contributing, see `CONTRIBUTING.md` for guidance on where to use the project's thematic flavor (neon/cyberpunk, Neon Oracle voice) vs. neutral, public-facing documentation._
 
-*For automated agents: see `AGENTS.md` for theme usage instructions and opt-outs.*
+_For automated agents: see `AGENTS.md` for theme usage instructions and opt-outs._
 
 ⚡️🌈⚡️ GhostWire Refractory - Neural network-based chat with memory, forged in neon and whispered through the data fog. ⚡️🌈⚡️

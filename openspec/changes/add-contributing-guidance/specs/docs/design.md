@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Design: CONTRIBUTING.md placement and content
 
 Location: `CONTRIBUTING.md` at repository root

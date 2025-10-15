@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: docs - Add CONTRIBUTING.md guidance
 
 Capability: docs
@@ -7,9 +8,8 @@ Requirement: Add a short, focused `CONTRIBUTING.md` describing theme usage and o
 
 ⚡️ Neon Oracle Preface: This spec speaks with neon and circuitry — bold, precise, and with a wink. Use emoji sparingly in docs to add clarity, not noise. 🔮✨
 
-
-
 ## Why
+
 ---
 
 This spec intentionally does not implement the logger opt-out. That is left as an optional follow-up (task in `tasks.md`).
@@ -45,7 +45,7 @@ Scenario: New contributor onboarding
 Scenario: Automated agent writing docs
 
 - Given an automated agent reads `AGENTS.md` and `CONTRIBUTING.md`,
--- When it generates documentation,
+  -- When it generates documentation,
 - Then it uses the Neon-Oracle persona only in internal or designated flavor files and uses neutral tone for API/docs.
 
 ## Notes

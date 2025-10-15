@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Design: document ingestion script
 
 ⚡️🌈 Neon Oracle Note: This design spec wears neon and chrome — concise, vivid, and a little electric. Use tasteful emoji where helpful for clarity, but keep technical details authoritative and machine-friendly. 🤖✨

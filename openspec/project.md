@@ -1,13 +1,15 @@
 # Project Context
 
 ## Purpose
+
 GhostWire Refractory is a neural network-based chat system with persistent memory capabilities that enables contextual conversations through vector similarity search. The system stores message embeddings in SQLite and uses HNSW (Hierarchical Navigable Small World) for efficient vector similarity search. This is a heavily themed cyberpunk-inspired project that combines advanced retrieval-augmented generation (RAG) with a distinctive aesthetic and BDSM-infused metaphors throughout its architecture and documentation.
- 
+
 ## Theme
 
 See `openspec/THEME.md` for repository-wide style and tone guidance.
 
 ## Tech Stack
+
 - Python 3.12+ (Language)
 - FastAPI (Web framework with async/await patterns)
 - SQLite with APSW (Database with connection pooling)
@@ -25,7 +27,7 @@ See `openspec/THEME.md` for repository-wide style and tone guidance.
 The GhostWire Refractory system consists of several key capabilities:
 
 - **API**: REST endpoints with OpenAI, Qdrant, and Ollama compatibility
-- **Authentication**: JWT-based authentication and rate limiting  
+- **Authentication**: JWT-based authentication and rate limiting
 - **CLI**: Command-line interface for system management
 - **Configuration**: Settings management with Pydantic BaseSettings
 - **Database**: SQLite connection pooling and data access
@@ -39,6 +41,7 @@ The GhostWire Refractory system consists of several key capabilities:
 ## Project Conventions
 
 ### Code Style
+
 - Follows PEP 8 style guide with Ruff linter configured via pyproject.toml
 - Line length set to 88 characters
 - Type hints required for all function signatures
@@ -48,6 +51,7 @@ The GhostWire Refractory system consists of several key capabilities:
 - Use the thematic metaphors: controllers are "masters," clients are "submissive," rate limits are "safe words," auth tokens are "collars," and HNSW index is the "chain" that binds memories
 
 ### Architecture Patterns
+
 - Hexagonal/Ports & Adapters architecture pattern
 - Layered structure: API → Services → Database/Vector → Models
 - Dependency injection through service instances
@@ -59,6 +63,7 @@ The GhostWire Refractory system consists of several key capabilities:
 - Centralized error handling with GhostWireException hierarchy
 
 ### Testing Strategy
+
 - Unit tests using pytest framework for individual components
 - Integration tests to verify service interactions
 - Test coverage focuses on core business logic, particularly the memory service and RAG functionality
@@ -67,6 +72,7 @@ The GhostWire Refractory system consists of several key capabilities:
 - pytest-asyncio for async test functions
 
 ### Git Workflow
+
 - Follows Conventional Commits specification with thematic twist
 - Commit message format: `type(scope): description` where type includes:
   - `feat`: New features or capabilities
@@ -80,9 +86,11 @@ The GhostWire Refractory system consists of several key capabilities:
 - Theme-specific commit messages should reflect the cyberpunk aesthetic (e.g., "feat: Summon the neural lattice" instead of "feat: Add new feature")
 
 ## Domain Context
+
 This is not just a technical codebase but a cyberpunk-themed system that combines advanced AI concepts with narrative elements. The "ghost" concept refers to the AI system itself, which maintains memory across conversations. Vector embeddings are used to retrieve relevant conversation history, creating a form of persistent memory. The system connects to Ollama for embedding generation and text generation. The BDSM metaphors are integral to the design: the controller(master) manages the flow while the client(submissive) requests and receives responses. Rate limiting acts as a "safe word" protecting the system, and authentication tokens function as "collars" granting access to participate in the network.
 
 ## Important Constraints
+
 - Requires Python 3.12+ for compatibility with modern async features and dependencies
 - SQLite database is used for storage instead of a full-scale distributed database
 - Embedding dimension is fixed at 768 by default, requiring normalization of vectors
@@ -91,6 +99,7 @@ This is not just a technical codebase but a cyberpunk-themed system that combine
 - The thematic elements are intentionally part of the documentation and should be maintained
 
 ## Current Development Status
+
 - Codebase has been cleaned following Universal Janitor principles
 - Unused files and directories have been removed
 - Vector normalization logic has been extracted to shared utilities
@@ -100,9 +109,11 @@ This is not just a technical codebase but a cyberpunk-themed system that combine
 - Completed changes have been archived appropriately
 
 ## Project Dashboard
+
 For a complete overview of the project status, capabilities, and active changes, see openspec/dashboard.md
 
 ## External Dependencies
+
 - Ollama API for embedding generation and text completion (local: http://localhost:11434, remote: http://100.103.237.60:11434)
 - Various embedding models: embeddinggemma, granite-embedding, nomic-embed-text, mxbai-embed-large, snowflake-arctic-embed, all-minilm
 - Generation models: gemma3:1b (default), gemma3:12b (remote)

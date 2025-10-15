@@ -43,7 +43,7 @@ Verify that all new functionality passes unit tests:
 # Navigate to project root
 cd /path/to/ghostwire-refractory
 
-# Activate virtual environment  
+# Activate virtual environment
 source .venv/bin/activate
 
 # Run new unit tests
@@ -65,13 +65,14 @@ python -m ghostwire
 
 # In another terminal, test endpoints
 curl -X PUT http://localhost:8000/api/v1/collections/test_collection
-curl -X GET http://localhost:8000/api/v1/collections/test_collection  
+curl -X GET http://localhost:8000/api/v1/collections/test_collection
 curl -X DELETE http://localhost:8000/api/v1/collections/test_collection
 ```
 
 ## Expected Results
 
 ### Token Savings Benchmarks
+
 - **Overall Savings**: ≥ 40% reduction in token usage
 - **Caching Layer**: ≥ 35% savings for similar queries
 - **Context Optimization**: ≥ 20% savings through smart selection
@@ -79,12 +80,14 @@ curl -X DELETE http://localhost:8000/api/v1/collections/test_collection
 - **Response Caching**: Variable savings based on repetition
 
 ### Unit Tests
+
 - **Context Optimizer Tests**: 12/12 should pass
 - **Enhanced Summarization Tests**: 9/9 should pass
 - **Enhanced Cache Service Tests**: Most should pass (some may have database locking issues in test environment)
 - **Enhanced RAG Service Tests**: Core functionality tests should pass
 
 ### API Endpoints
+
 - **PUT /collections/{name}**: Should return 200 OK
 - **GET /collections/{name}**: Should return collection info
 - **DELETE /collections/{name}**: Should return 200 OK
@@ -155,6 +158,7 @@ fi
 ## Troubleshooting
 
 ### If Benchmarks Fail
+
 ```bash
 # Check Python version
 python --version
@@ -167,6 +171,7 @@ pip install -e .
 ```
 
 ### If Unit Tests Fail
+
 ```bash
 # Check test environment
 python -c "import pytest; print('pytest available')"
@@ -176,6 +181,7 @@ python -m pytest python/tests/unit/ -v --tb=short
 ```
 
 ### If API Endpoints Don't Respond
+
 ```bash
 # Check if server is running
 ps aux | grep uvicorn
@@ -187,18 +193,21 @@ tail -f logs/ghostwire.log
 ## Success Indicators
 
 ✅ **All Good Signs:**
+
 - Benchmarks show 40-50% token savings
 - Unit tests pass (especially context optimizer and summarization)
 - API endpoints respond correctly
 - No error messages in logs
 
 ⚠️ **Warning Signs:**
+
 - Negative or zero savings in benchmarks
 - Multiple unit test failures
 - API endpoints return 500 errors
 - Database locking errors in cache tests
 
 ❌ **Critical Issues:**
+
 - Benchmark module not found
 - Core modules fail to import
 - Server fails to start

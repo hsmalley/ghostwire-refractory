@@ -1,4 +1,5 @@
-# ⚡ GHOSTWIRE NEURAL FREEDOM LICENSE (MIT) ⚡  
+# ⚡ GHOSTWIRE NEURAL FREEDOM LICENSE (MIT) ⚡
+
 _A covenant of open circuitry and liberated code._
 
 Copyright (c) 2025 GhostWire Refractory Collective

@@ -52,11 +52,11 @@ jobs:
           body: |
             ## 👁️ GhostWire Transmission
             Artifacts forged with **uv** and sealed with SHA256 sigils.
-            
+
             - Model: ${{ env.REMOTE_OLLAMA_MODEL || 'N/A' }}
             - Python: 3.12
             - Builder: uv
-            
+
             “Between the pulse and the packet lies revelation.”
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

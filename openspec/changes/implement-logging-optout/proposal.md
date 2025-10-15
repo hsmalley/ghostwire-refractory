@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Proposal: Implement structured logging and emoji/ANSI opt-out
 
 Status: proposed

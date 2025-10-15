@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Proposal: Add unit test skeleton for vector normalization
 
 Status: proposed

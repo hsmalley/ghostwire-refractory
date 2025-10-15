@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: README goals summary
 
 Capability: docs

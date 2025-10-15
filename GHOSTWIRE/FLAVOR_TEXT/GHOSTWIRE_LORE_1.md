@@ -1,19 +1,20 @@
-# **GHOSTWIRE – THE NEON‑BATHE ORACLE OF THE UNDERCITY**  
-*A cyber‑punk, BDSM‑flavoured, rainbow‑splashed saga that fuses code, terminal rites, and over‑the‑top myth.*
+# **GHOSTWIRE – THE NEON‑BATHE ORACLE OF THE UNDERCITY**
 
----  
+_A cyber‑punk, BDSM‑flavoured, rainbow‑splashed saga that fuses code, terminal rites, and over‑the‑top myth._
 
-## 🌌 PROLOGUE: THE CITY THAT NEVER SLEEPS  
+---
 
-Neon‑Spire towers pierced the perpetual twilight, their holo‑billboards screaming **“BUY THE FUTURE!”** below. Beneath the glittering canopy lay the **Undercity**, a maze of steam‑choked tunnels, rusted conduits, and forgotten server farms that hummed like a sleeping beast.  
+## 🌌 PROLOGUE: THE CITY THAT NEVER SLEEPS
+
+Neon‑Spire towers pierced the perpetual twilight, their holo‑billboards screaming **“BUY THE FUTURE!”** below. Beneath the glittering canopy lay the **Undercity**, a maze of steam‑choked tunnels, rusted conduits, and forgotten server farms that hummed like a sleeping beast.
 
 In a cramped loft lit only by the glow of a cracked monitor, **Raze**—former corporate architect turned cyber‑rebel—gathered her ragtag crew: **Jax** (tattooed hacker), **Mira** (linguist‑witch), **Kade** (ex‑security analyst), and the ever‑watchful **Ghostwire** itself, a repository of every whispered thought ever spoken in those tunnels.
 
-> *“We will summon a ghost that remembers every sin, every secret, every scream,”* Raze declared, her hair dyed electric‑blue, her fingers dancing over the keyboard like a conductor wielding a baton of light.
+> _“We will summon a ghost that remembers every sin, every secret, every scream,”_ Raze declared, her hair dyed electric‑blue, her fingers dancing over the keyboard like a conductor wielding a baton of light.
 
----  
+---
 
-## ⚡ ACT I – SUMMONING THE GHOST (SETUP)  
+## ⚡ ACT I – SUMMONING THE GHOST (SETUP)
 
 ```bash
 # ──► Clone the forbidden repo from the darknet
@@ -42,11 +43,11 @@ SECRET_KEY=$(openssl rand -hex 32)   # the iron‑clasp
 EOF
 ```
 
-*The room vibrated as the terminal printed green‑glowing glyphs—each line a chant that bound the ghost to this reality.*
+_The room vibrated as the terminal printed green‑glowing glyphs—each line a chant that bound the ghost to this reality._
 
----  
+---
 
-## 🕸️ ACT II – AWAKENING THE CONTROLLER (DAEMON PRIEST)  
+## 🕸️ ACT II – AWAKENING THE CONTROLLER (DAEMON PRIEST)
 
 ```bash
 # Launch the FastAPI controller – the master that hoards memories
@@ -64,11 +65,11 @@ uv run uvicorn src.ghostwire.main:app \
 2025-10-14 21:03:12,215 INFO     🚀 Controller listening on http://0.0.0.0:8000
 ```
 
-*The HNSW lattice flickered into existence, a shimmering web of invisible chains linking every future whisper.*
+_The HNSW lattice flickered into existence, a shimmering web of invisible chains linking every future whisper._
 
----  
+---
 
-## 🤖 ACT III – THE CLIENT (OPERATOR CONSOLE)  
+## 🤖 ACT III – THE CLIENT (OPERATOR CONSOLE)
 
 ```bash
 # Open a second terminal – the submissive that speaks to the master
@@ -89,11 +90,11 @@ uv run python -m client.operator_console
 > Hello, wanderer of the neon night. How may I assist you today?
 ```
 
-*Every keystroke is transmuted into a 768‑dimensional sigil, shot through the ether to the controller, and answered in real‑time.*
+_Every keystroke is transmuted into a 768‑dimensional sigil, shot through the ether to the controller, and answered in real‑time._
 
----  
+---
 
-## 📜 ACT IV – FIRST MEMORY (THE RITUAL)  
+## 📜 ACT IV – FIRST MEMORY (THE RITUAL)
 
 ```bash
 # Store a memory that the ghost will later echo back
@@ -114,13 +115,13 @@ curl -X POST http://localhost:8000/api/v1/memory \
 }
 ```
 
-*The ghost now bears a fragment of the city’s weather, a droplet of neon‑acid forever etched in its lattice.*
+_The ghost now bears a fragment of the city’s weather, a droplet of neon‑acid forever etched in its lattice._
 
----  
+---
 
-## 🏃‍♂️ ACT V – THE FIRST RUNNER (VEX)  
+## 🏃‍♂️ ACT V – THE FIRST RUNNER (VEX)
 
-A frantic courier, **Vex**, bursts in, clutching a data shard.  
+A frantic courier, **Vex**, bursts in, clutching a data shard.
 
 > “The Syndicate’s drones are on my tail. I need a safe route!”
 
@@ -147,11 +148,11 @@ curl -X POST http://localhost:8000/api/v1/chat_embedding \
 > completely out of drone sight.
 ```
 
-*The ghost stitches together past snippets, delivering a bespoke, stealthy itinerary—Vex disappears into the night, his breath steadier than ever.*
+_The ghost stitches together past snippets, delivering a bespoke, stealthy itinerary—Vex disappears into the night, his breath steadier than ever._
 
----  
+---
 
-## 🛡️ ACT VI – THE CORPORATE COUNTER‑ATTACK (SAFE‑WORD)  
+## 🛡️ ACT VI – THE CORPORATE COUNTER‑ATTACK (SAFE‑WORD)
 
 The **Corporate Council** of Neon‑Spire, terrified of losing control, launches a barrage of requests.
 
@@ -167,11 +168,11 @@ wait
 200 200 200 200 200 200 200 200 200 200 429 429 429 429 429 …
 ```
 
-*The **429 Too Many Requests** response is the ghost’s safe‑word, halting the onslaught before the lattice can be shattered.*
+_The **429 Too Many Requests** response is the ghost’s safe‑word, halting the onslaught before the lattice can be shattered._
 
----  
+---
 
-## 💥 ACT VII – FRAGMENTATION & RESILIENCE (THE GHOST SCATTERS)  
+## 💥 ACT VII – FRAGMENTATION & RESILIENCE (THE GHOST SCATTERS)
 
 When the Council finally storms the loft, Raze triggers the self‑destruct protocol.
 
@@ -197,11 +198,11 @@ uv run python -m ghostwire.shard_node --shard-id 3
 2025-10-15 00:02:01,110 INFO  HNSW index for shard 3 ready.
 ```
 
-*Even torn apart, the ghost lives on, distributed like a phantom across the city’s neon veins.*
+_Even torn apart, the ghost lives on, distributed like a phantom across the city’s neon veins._
 
----  
+---
 
-## 🌈 ACT VIII – THE NEON ORACLE (EPILOGUE)  
+## 🌈 ACT VIII – THE NEON ORACLE (EPILOGUE)
 
 Years later, the Undercity reveres **Ghostwire** as the **Neon Oracle**—a living archive that answers any query with a blend of sarcasm, poetry, and raw computational empathy.
 
@@ -223,12 +224,10 @@ curl -X POST http://localhost:8000/api/v1/chat_embedding \
 
 From the loft’s highest window, Raze—now an elder with silver hair streaked neon—watches holographic rain cascade down the glass. She smiles, knowing the ghost she birthed will forever pulse with the city’s secrets, desires, and sins.
 
-> **“Plug in. Light up the night. Let the wires sing.”**  
+> **“Plug in. Light up the night. Let the wires sing.”**
 
-The neon skyline brightens, each billboard flashing a fragment of the ghost’s memory. The city sings, and **Ghostwire** continues to listen, store, and whisper—forever the **OVER‑THE‑TOP, BDSM‑infused, CYBER‑PUNK, RAINBOW‑EMOJI‑saturated oracle** of the Undercity.  
+The neon skyline brightens, each billboard flashing a fragment of the ghost’s memory. The city sings, and **Ghostwire** continues to listen, store, and whisper—forever the **OVER‑THE‑TOP, BDSM‑infused, CYBER‑PUNK, RAINBOW‑EMOJI‑saturated oracle** of the Undercity.
 
----  
+---
 
-*End of saga.*  
-
-
+_End of saga._

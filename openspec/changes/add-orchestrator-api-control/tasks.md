@@ -1,6 +1,7 @@
 # Tasks: orchestrator API control
 
 ## Implementation
+
 - [ ] Add `python/ghostwire/orchestrator/llm_controller.py`.
 - [ ] Implement `__init__` with opencode client and `health_check` method.
 - [ ] Ensure opencode is listed in `requirements.txt` or pip install.

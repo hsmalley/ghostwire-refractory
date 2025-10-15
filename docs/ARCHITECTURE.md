@@ -65,16 +65,16 @@ GhostWire Refractory is a neural network-based chat system with persistent memor
 
 ### Technology Stack
 
-| Layer | Technologies | Purpose |
-|-------|--------------|---------|
-| Web Framework | FastAPI | API development and async handling |
-| Database | SQLite + APSW | Persistent storage |
-| Vector Indexing | HNSWlib | Fast similarity search |
-| HTTP Client | HTTPX | Async HTTP requests |
-| Data Validation | Pydantic | Request/response validation |
-| Authentication | JWT + bcrypt | Security and auth |
-| Testing | Pytest + AsyncIO | Unit and integration tests |
-| Vector Processing | NumPy | Numerical computations |
+| Layer             | Technologies     | Purpose                            |
+| ----------------- | ---------------- | ---------------------------------- |
+| Web Framework     | FastAPI          | API development and async handling |
+| Database          | SQLite + APSW    | Persistent storage                 |
+| Vector Indexing   | HNSWlib          | Fast similarity search             |
+| HTTP Client       | HTTPX            | Async HTTP requests                |
+| Data Validation   | Pydantic         | Request/response validation        |
+| Authentication    | JWT + bcrypt     | Security and auth                  |
+| Testing           | Pytest + AsyncIO | Unit and integration tests         |
+| Vector Processing | NumPy            | Numerical computations             |
 
 ## Component Architecture
 
@@ -112,7 +112,7 @@ python/
 
 - **Key Classes**: `Settings` (Pydantic BaseSettings)
 
-- **Features**: 
+- **Features**:
   - Environment variable loading
   - Type validation
   - Default value management
@@ -121,7 +121,7 @@ python/
 
 - **Responsibility**: Connection pooling and data access
 
-- **Key Classes**: 
+- **Key Classes**:
   - `ConnectionPool`: Thread-safe connection pooling
   - `MemoryRepository`: Data access operations
 
@@ -164,7 +164,7 @@ graph TD
     B --> D[Vector Index]
     B --> E[External APIs]
     F[Client] --> A
-    
+
     style A fill:#e1f5fe
     style B fill:#f3e5f5
     style C fill:#e8f5e8
@@ -247,21 +247,25 @@ The GHOSTWIRE scoring system provides multiple specialized scoring functions:
 ### Benchmark Categories
 
 #### 1. Embedding Benchmarks (`embedding_benchmarks.py`)
+
 - Tests embedding generation performance and stability
 - Measures latency, memory usage, and embedding consistency
 - Computes embedding-specific GHOSTWIRE scores
 
 #### 2. RAG Benchmarks (`rag_benchmarks.py`)
+
 - Evaluates Retrieval-Augmented Generation systems
 - Tests retrieval performance and generation quality
 - Calculates RAG-specific GHOSTWIRE scores
 
 #### 3. Summarization Benchmarks (`summarization_benchmarks.py`)
+
 - Assesses text summarization effectiveness
 - Measures quality, factual accuracy, and generation speed
 - Computes summarization-specific GHOSTWIRE scores
 
 #### 4. Model Comparison Benchmark (`model_comparison_benchmark.py`)
+
 - Comprehensive evaluation across all benchmark categories
 - Ranks models based on overall GHOSTWIRE scores
 - Provides comparative analysis for model selection
@@ -288,15 +292,15 @@ The system includes comprehensive pytest-based testing with:
 
 ### REST Endpoints
 
-| Method | Endpoint | Description | Auth Required |
-|--------|----------|-------------|---------------|
-| `GET` | `/api/v1/health` | Health check | No |
-| `POST` | `/api/v1/embeddings` | Generate embeddings | No* |
-| `POST` | `/api/v1/vectors/upsert` | Store vector | No* |
-| `POST` | `/api/v1/vectors/query` | Vector similarity search | No* |
-| `POST` | `/api/v1/chat/chat_embedding` | Chat with memory | No* |
+| Method | Endpoint                      | Description              | Auth Required |
+| ------ | ----------------------------- | ------------------------ | ------------- |
+| `GET`  | `/api/v1/health`              | Health check             | No            |
+| `POST` | `/api/v1/embeddings`          | Generate embeddings      | No\*          |
+| `POST` | `/api/v1/vectors/upsert`      | Store vector             | No\*          |
+| `POST` | `/api/v1/vectors/query`       | Vector similarity search | No\*          |
+| `POST` | `/api/v1/chat/chat_embedding` | Chat with memory         | No\*          |
 
-*Auth may be required in production deployment
+\*Auth may be required in production deployment
 
 ### Request/Response Models
 
@@ -323,13 +327,13 @@ EmbeddingRequest {
 
 ### API Performance
 
-| Endpoint | Avg. Latency (ms) | Throughput (req/s) | Memory (MB) |
-|----------|------------------|-------------------|-------------|
-| `/embeddings` | ~150 | ~60 | ~45 |
-| `/chat_embedding` | ~800 | ~15 | ~65 |
-| `/vectors/query` | ~80 | ~120 | ~35 |
+| Endpoint          | Avg. Latency (ms) | Throughput (req/s) | Memory (MB) |
+| ----------------- | ----------------- | ------------------ | ----------- |
+| `/embeddings`     | ~150              | ~60                | ~45         |
+| `/chat_embedding` | ~800              | ~15                | ~65         |
+| `/vectors/query`  | ~80               | ~120               | ~35         |
 
-*Note: Performance metrics are approximate and depend on hardware and data size*
+_Note: Performance metrics are approximate and depend on hardware and data size_
 
 ## Performance Considerations
 
@@ -348,11 +352,11 @@ HNSW_EF = 50                # Query parameter
 
 #### Performance Metrics
 
-| Operation | Time Complexity | Memory Usage |
-|-----------|----------------|--------------|
-| Insertion | O(log n) | O(n) |
-| Query | O(log n) | O(k) for k results |
-| Index Build | O(n log n) | O(n) |
+| Operation   | Time Complexity | Memory Usage       |
+| ----------- | --------------- | ------------------ |
+| Insertion   | O(log n)        | O(n)               |
+| Query       | O(log n)        | O(k) for k results |
+| Index Build | O(n log n)      | O(n)               |
 
 ### Database Performance
 
@@ -409,12 +413,13 @@ For typical deployment:
 ### Input Validation
 
 #### Security Measures
-| Type | Implementation | Purpose |
-|------|----------------|---------|
-| Session ID | Regex validation | Prevent injection |
-| Text Content | Length + pattern checks | Prevent abuse |
-| Embeddings | Dimension validation | Prevent errors |
-| SQL Injection | Parameterized queries | Data integrity |
+
+| Type          | Implementation          | Purpose           |
+| ------------- | ----------------------- | ----------------- |
+| Session ID    | Regex validation        | Prevent injection |
+| Text Content  | Length + pattern checks | Prevent abuse     |
+| Embeddings    | Dimension validation    | Prevent errors    |
+| SQL Injection | Parameterized queries   | Data integrity    |
 
 ### Data Protection
 
@@ -430,11 +435,11 @@ For typical deployment:
 
 ### Horizontal Scaling Considerations
 
-| Component | Scalability | Notes |
-|-----------|-------------|-------|
-| API Layer | High | Multiple instances, load balancer |
-| Database | Medium | Read replicas possible |
-| Vector Index | Low | Currently memory-bound |
+| Component    | Scalability | Notes                             |
+| ------------ | ----------- | --------------------------------- |
+| API Layer    | High        | Multiple instances, load balancer |
+| Database     | Medium      | Read replicas possible            |
+| Vector Index | Low         | Currently memory-bound            |
 
 ### Deployment Architecture
 
@@ -470,7 +475,7 @@ HOST: str = "0.0.0.0"
 PORT: int = 8000
 DEBUG: bool = False
 
-# Database configuration  
+# Database configuration
 DB_PATH: str = "memory.db"
 DB_POOL_SIZE: int = 5
 DB_POOL_OVERFLOW: int = 10
@@ -524,7 +529,7 @@ $$ \text{similarity}(A, B) = A \cdot B $$
 
 Response time can be approximated as:
 
-$$ T_{response} = T_{embedding} + T_{retrieval} + T_{generation} + T_{overhead} $$
+$$ T*{response} = T*{embedding} + T*{retrieval} + T*{generation} + T\_{overhead} $$
 
 Where:
 
@@ -540,7 +545,7 @@ Where:
 
 Total memory consumption:
 
-$$ M_{total} = M_{app} + M_{hnsw} + M_{sqlite} + M_{cache} $$
+$$ M*{total} = M*{app} + M*{hnsw} + M*{sqlite} + M\_{cache} $$
 
 Where:
 
@@ -554,4 +559,4 @@ Where:
 
 ---
 
-*This architecture document is intended for senior architects and researchers working with neural network-based conversational systems. Implementation details may vary based on deployment environment and requirements.*
+_This architecture document is intended for senior architects and researchers working with neural network-based conversational systems. Implementation details may vary based on deployment environment and requirements._

@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Proposal: Add CONTRIBUTING.md with theme guidance and opt-outs
 
 Status: proposed

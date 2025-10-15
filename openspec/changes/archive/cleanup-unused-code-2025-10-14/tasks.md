@@ -2,10 +2,10 @@
 
 - [x] 1.1 Remove empty clients directory
 - [x] 1.2 Remove unused logging module
-- [x] 1.3 Implement HNSW _backfill_from_db method with database query logic
+- [x] 1.3 Implement HNSW \_backfill_from_db method with database query logic
 - [x] 1.4 Create shared vector utilities module
 - [x] 1.5 Update MemoryService to use shared normalization function
-- [x] 1.6 Remove private _normalize_vector method from MemoryService
+- [x] 1.6 Remove private \_normalize_vector method from MemoryService
 - [x] 1.7 Create OpenSpec documentation for all major capabilities
 - [x] 1.8 Update project documentation to reflect current state
 

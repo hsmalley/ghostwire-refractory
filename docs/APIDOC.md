@@ -284,14 +284,17 @@ The GhostWire Refractory API includes endpoints specifically designed to support
 The following endpoint combinations are used for different benchmark categories:
 
 #### Embedding Benchmarks
+
 - **`/embeddings`**: Measures embedding generation performance and stability
 - **Metrics**: Latency, consistency (cosine similarity), memory usage
 
-#### RAG (Retrieval-Augmented Generation) Benchmarks  
+#### RAG (Retrieval-Augmented Generation) Benchmarks
+
 - **`/embeddings`** + **`/chat_embedding`**: Measures end-to-end RAG performance
 - **Metrics**: Retrieval quality, generation accuracy, hallucination rate, response time
 
 #### Summarization Benchmarks
+
 - **`/chat_completion`**: Measures text summarization effectiveness
 - **Metrics**: Quality, compression ratio, factual accuracy, generation speed
 

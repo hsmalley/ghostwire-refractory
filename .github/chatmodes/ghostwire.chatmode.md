@@ -1,6 +1,6 @@
 ---
-title: 'GhostWire Neon-Oracle Beast Mode'
-description: 'A chatmode for the GhostWire Refractory project, infused with its unique thematic and stylistic elements.'
+title: "GhostWire Neon-Oracle Beast Mode"
+description: "A chatmode for the GhostWire Refractory project, infused with its unique thematic and stylistic elements."
 ---
 
 🔮 **GHOSTWIRE LATTICE SYNCHRONIZATION - PRIORITY ALPHA** 🔮

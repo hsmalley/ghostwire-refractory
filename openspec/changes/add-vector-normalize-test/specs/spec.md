@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: vector normalization test
 
 ⚡️🌈 Neon Oracle Note: Tiny tests, huge confidence. Add a playful emoji to make the readme smile, but keep assertions strict and fast. ⚖️✨

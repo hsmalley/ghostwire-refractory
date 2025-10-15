@@ -156,9 +156,27 @@ healthcheck:
 example_trace:
   user_intent: "Add DELETE /user/{id}"
   plan:
-    - assignment: {worker: worker_api, module: user_accounts, file: spec.yaml, desc: "add DELETE /user/{id} interface"}
-    - assignment: {worker: worker_tasks, module: user_accounts, file: tasks.yaml, desc: "add delete_user task"}
-    - assignment: {worker: worker_roles, module: user_accounts, file: roles.yaml, desc: "map delete_user→UserAgent"}
+    - assignment:
+        {
+          worker: worker_api,
+          module: user_accounts,
+          file: spec.yaml,
+          desc: "add DELETE /user/{id} interface",
+        }
+    - assignment:
+        {
+          worker: worker_tasks,
+          module: user_accounts,
+          file: tasks.yaml,
+          desc: "add delete_user task",
+        }
+    - assignment:
+        {
+          worker: worker_roles,
+          module: user_accounts,
+          file: roles.yaml,
+          desc: "map delete_user→UserAgent",
+        }
   sequence:
     - worker_api emits Ψp#A1
     - secondary approves Ψp#A1

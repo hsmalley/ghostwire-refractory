@@ -1,4 +1,5 @@
 ## Context
+
 The GhostWire Refractory codebase contained technical debt in the form of unused files and incomplete implementations. Following Universal Janitor principles, we needed to clean up the codebase to reduce complexity and improve maintainability.
 
 ## Goals / Non-Goals
@@ -38,7 +39,7 @@ The GhostWire Refractory codebase contained technical debt in the form of unused
 
 ## Migration Plan
 
-- Steps: 
+- Steps:
   1. Remove unused files
   2. Implement missing functionality
   3. Refactor duplicated code

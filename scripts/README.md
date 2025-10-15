@@ -11,6 +11,7 @@ Supports txt/md/code inputs, chunking, optional summarization, embedding generat
 and storage into the local vector DB.
 
 Usage:
+
 ```bash
 # Ingest a single file
 python scripts/import_documents.py README.md
@@ -26,6 +27,7 @@ python scripts/import_documents.py docs/ --verbose
 ```
 
 Options:
+
 - `--dry-run`: Perform a dry run without actually storing documents
 - `--summarize`: Enable summarization of large chunks
 - `--chunk-size`: Size of chunks in tokens/words (default: 500)
@@ -36,6 +38,7 @@ Options:
 ### Other Scripts
 
 Additional scripts may be available in subdirectories:
+
 - `benchmarks/`: Performance testing scripts
 - `tests/`: Unit and integration test runners
 
@@ -53,6 +56,7 @@ See individual script documentation for requirements.
 ## Environment Variables
 
 Scripts respect the same environment variables as the main application:
+
 - `DB_PATH`: Path to SQLite database (default: "memory.db")
 - `LOCAL_OLLAMA_URL`: Local Ollama API URL (default: "http://localhost:11434")
 - `REMOTE_OLLAMA_URL`: Remote Ollama API URL (default: "http://100.103.237.60:11434")

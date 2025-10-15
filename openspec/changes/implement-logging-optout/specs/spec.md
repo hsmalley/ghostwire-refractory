@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: structured logging and emoji opt-out
 
 Capability: config & logging

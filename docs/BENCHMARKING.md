@@ -3,6 +3,7 @@
 This document provides instructions for running token usage benchmarks to verify the core functionality of the token optimization features implemented in GhostWire Refractory.
 
 ## Table of Contents
+
 1. [Overview](#overview)
 2. [Prerequisites](#prerequisites)
 3. [Running Benchmarks](#running-benchmarks)
@@ -13,6 +14,7 @@ This document provides instructions for running token usage benchmarks to verify
 ## Overview
 
 The GhostWire Refractory token optimization system provides significant reduction in token usage through multiple complementary techniques:
+
 - Token caching with similarity thresholds
 - Context window optimization
 - Intelligent response caching
@@ -24,6 +26,7 @@ The benchmarking system measures the effectiveness of these optimizations and pr
 ## Prerequisites
 
 Before running benchmarks, ensure you have:
+
 1. Python 3.12+ installed
 2. Virtual environment activated
 3. Required dependencies installed
@@ -87,11 +90,11 @@ from ghostwire.utils.token_benchmark import TokenBenchmarkSuite
 async def run_benchmarks():
     suite = TokenBenchmarkSuite()
     await suite.run_all_benchmarks()
-    
+
     # Generate and display report
     report = suite.generate_report()
     print(report)
-    
+
     # Save report to file
     suite.save_report("benchmark_report.json")
 
@@ -104,41 +107,51 @@ asyncio.run(run_benchmarks())
 The benchmark suite consists of 5 major components that test different aspects of the token optimization system:
 
 ### 1. Caching Layer Benchmark
+
 Measures token savings from the similarity-based caching system.
 
 **Key Metrics:**
+
 - Cache hit rates
 - Query processing reduction
 - Token savings percentage
 
 ### 2. Context Window Optimization Benchmark
+
 Measures effectiveness of context selection and truncation.
 
 **Key Metrics:**
+
 - Context token reduction
 - Information preservation
 - Processing overhead
 
 ### 3. Summarization Optimization Benchmark
+
 Measures text compression effectiveness.
 
 **Key Metrics:**
+
 - Compression ratios
 - Token savings
 - Quality preservation indicators
 
 ### 4. Response Caching Benchmark
+
 Measures savings from repeated identical requests.
 
 **Key Metrics:**
+
 - Cache hit rates for identical queries
 - Processing elimination
 - Memory efficiency
 
 ### 5. End-to-End Optimization Benchmark
+
 Measures combined effect of all optimizations working together.
 
 **Key Metrics:**
+
 - Overall token savings
 - Performance impact
 - Synergy between components
@@ -146,6 +159,7 @@ Measures combined effect of all optimizations working together.
 ## Interpreting Results
 
 ### Sample Output
+
 ```
 GhostWire Refractory - Token Usage Benchmark Report
 ====================================================
@@ -200,6 +214,7 @@ EXPECTED PRODUCTION SAVINGS: 44.5% reduction in token usage
 ## Expected Outcomes
 
 ### Typical Results
+
 - **Overall Token Savings**: 40-50% reduction in token usage
 - **Caching Layer**: 35-45% savings for similar query scenarios
 - **Context Optimization**: 20-30% savings through smart selection
@@ -207,11 +222,13 @@ EXPECTED PRODUCTION SAVINGS: 44.5% reduction in token usage
 - **Response Caching**: Variable based on query repetition patterns
 
 ### Performance Impact
+
 - **Latency**: Minimal to negative impact (caching often improves response times)
 - **Memory Usage**: Slight increase due to caching layers
 - **CPU Usage**: Minimal additional overhead for optimization calculations
 
 ### Quality Preservation
+
 - **Accuracy**: Maintained through similarity thresholds and intelligent selection
 - **Relevance**: Preserved through context-aware optimization
 - **Completeness**: Ensured through configurable compression ratios
@@ -221,15 +238,17 @@ EXPECTED PRODUCTION SAVINGS: 44.5% reduction in token usage
 ### Common Issues
 
 1. **Module Not Found Errors**
+
    ```bash
    # Ensure you're in the correct directory
    cd /path/to/ghostwire-refractory
-   
+
    # Ensure virtual environment is activated
    source .venv/bin/activate
    ```
 
 2. **Permission Denied Errors**
+
    ```bash
    # Ensure proper file permissions
    chmod +x python/ghostwire/cli.py
@@ -267,7 +286,7 @@ class CustomTokenBenchmark(TokenBenchmarkSuite):
         self.custom_test_data = [
             # Your custom test scenarios
         ]
-    
+
     async def run_custom_benchmark(self):
         # Your custom benchmark logic
         pass
@@ -286,7 +305,7 @@ CACHE_TTL_MINUTES = 120             # Adjust cache lifetime
 MAX_CONTEXT_TOKENS = 2048           # Adjust context window size
 CONTEXT_COMPRESSION_STRATEGY = "hybrid"  # Adjust strategy
 
-# Summarization settings  
+# Summarization settings
 SUMMARY_COMPRESSION_RATIO = 0.3    # Adjust compression ratio
 ```
 
@@ -309,21 +328,25 @@ The GHOSTWIRE scoring system provides standardized metrics to evaluate and compa
 ### Benchmark Categories
 
 #### 1. Embedding Benchmarks
+
 - **Data Source**: API requests to `/api/v1/embeddings`
 - **Metrics**: Embedding latency, stability (cosine similarity), memory usage
 - **Test Scenarios**: Short, medium, and long text embeddings
 
 #### 2. RAG Benchmarks
+
 - **Data Source**: Combined API requests to `/api/v1/embeddings` and `/api/v1/chat/chat_embedding`
 - **Metrics**: Retrieval latency, generation quality, hallucination rate, end-to-end response time
 - **Test Scenarios**: Factual questions, complex queries, conversational tasks
 
 #### 3. Summarization Benchmarks
+
 - **Data Source**: API requests to `/api/v1/chat/chat_completion`
 - **Metrics**: Summary quality, factual accuracy, compression ratio, generation latency
 - **Test Scenarios**: News articles, technical documents, multi-document summaries
 
 #### 4. Model Comparison Benchmarks
+
 - **Data Source**: Combined metrics from all benchmark categories
 - **Metrics**: Overall GHOSTWIRE score averaging all categories
 - **Test Scenarios**: Comprehensive evaluation across embedding, RAG, and summarization tasks for multiple models
@@ -371,6 +394,7 @@ All GHOSTWIRE benchmarking relies on the following data sources:
 The GhostWire Refractory token optimization and GHOSTWIRE scoring systems provide comprehensive measurement and evaluation capabilities. The token optimization system measures 40-50% token usage reduction, while the GHOSTWIRE scoring system enables fair comparison of AI models across multiple performance dimensions.
 
 Regular benchmarking is recommended to:
+
 1. Monitor optimization effectiveness
 2. Identify performance regressions
 3. Tune parameters for specific use cases

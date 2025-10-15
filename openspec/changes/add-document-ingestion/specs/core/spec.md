@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: document ingestion script
 
 Capability: ingestion

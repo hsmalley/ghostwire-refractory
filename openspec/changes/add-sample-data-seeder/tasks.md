@@ -1,4 +1,5 @@
 ## Implementation
+
 - [x] Implement `scripts/seed_sample_data.py` following the design.
 - [x] Ensure idempotency and respect `DB_PATH`.
 - [x] Write unit test for data insertion.

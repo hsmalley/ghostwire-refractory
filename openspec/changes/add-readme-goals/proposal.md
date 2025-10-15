@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Proposal: Add "Project goals" summary to README
 
 Status: proposed

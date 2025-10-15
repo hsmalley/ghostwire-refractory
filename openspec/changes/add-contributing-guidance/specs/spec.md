@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Spec: CONTRIBUTING.md with theme guidance and opt-outs
 
 Capability: docs

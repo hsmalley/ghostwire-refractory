@@ -1,4 +1,5 @@
 <!-- OPENSPEC:START -->
+
 # Design: structured logging and emoji opt-out
 
 Decisions:

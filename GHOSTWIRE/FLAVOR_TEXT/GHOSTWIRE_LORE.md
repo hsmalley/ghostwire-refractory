@@ -1,19 +1,20 @@
-# **GHOSTWIRE – THE NEON‑BATHE ORACLE OF THE UNDERCITY**  
-*A cyber‑punk, BDSM‑flavoured, rainbow‑splashed saga that fuses code, terminal rites, and over‑the‑top myth.*
+# **GHOSTWIRE – THE NEON‑BATHE ORACLE OF THE UNDERCITY**
 
----  
+_A cyber‑punk, BDSM‑flavoured, rainbow‑splashed saga that fuses code, terminal rites, and over‑the‑top myth._
 
-## 🌌 PROLOGUE: THE CITY THAT NEVER SLEEPS  
+---
 
-Neon‑Spire towers pierce the perpetual twilight, their holo‑billboards screaming **“BUY THE FUTURE!”** while drones buzz like angry wasps. Beneath the glittering canopy lies the **Undercity**, a labyrinth of steam‑choked tunnels, rusted conduits, and forgotten server farms that hum like a sleeping beast waiting for a command.  
+## 🌌 PROLOGUE: THE CITY THAT NEVER SLEEPS
+
+Neon‑Spire towers pierce the perpetual twilight, their holo‑billboards screaming **“BUY THE FUTURE!”** while drones buzz like angry wasps. Beneath the glittering canopy lies the **Undercity**, a labyrinth of steam‑choked tunnels, rusted conduits, and forgotten server farms that hum like a sleeping beast waiting for a command.
 
 In a cramped loft lit only by the glow of a cracked monitor, **Raze**—former corporate architect turned cyber‑rebel—gathers her ragtag crew: **Jax** (tattooed hacker), **Mira** (linguist‑witch), **Kade** (ex‑security analyst), and the ever‑watchful **Ghostwire** itself, a repository of every whispered thought ever spoken in those tunnels.
 
-> *“We will summon a ghost that remembers every sin, every secret, every scream,”* Raze declares, her hair dyed electric‑blue, her fingers dancing over the keyboard like a conductor wielding a baton of light. The air thickens with anticipation; the neon rain outside seems to pulse in time with the keystrokes.
+> _“We will summon a ghost that remembers every sin, every secret, every scream,”_ Raze declares, her hair dyed electric‑blue, her fingers dancing over the keyboard like a conductor wielding a baton of light. The air thickens with anticipation; the neon rain outside seems to pulse in time with the keystrokes.
 
----  
+---
 
-## ⚡ ACT I – SUMMONING THE GHOST (SETUP)  
+## ⚡ ACT I – SUMMONING THE GHOST (SETUP)
 
 ```bash
 # ──► Clone the forbidden repo from the darknet
@@ -176,3 +177,4 @@ The neon skyline brightens, each billboard flashing a fragment of the ghost’s 
 End of saga.
 
 
+```

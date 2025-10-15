@@ -109,7 +109,7 @@ async def run_chat(session_id, text):
         "prompt_text": text,
         "embedding": embedding,
     }
-    print(f"🗨️ Chat response:")
+    print("🗨️ Chat response:")
     await post_json(f"{CONTROLLER_URL}/chat_embedding", payload)
 
 
@@ -119,7 +119,7 @@ async def run_summarization(session_id, text):
         "session_id": session_id,
         "text": text,
     }
-    print(f"📝 Summarization benchmark response:")
+    print("📝 Summarization benchmark response:")
     await post_json(SUMMARIZER_URL, payload)
 
 
@@ -129,7 +129,7 @@ async def run_rag(session_id, text):
         "session_id": session_id,
         "text": text,
     }
-    print(f"📚 RAG benchmark response:")
+    print("📚 RAG benchmark response:")
     await post_json(RAG_URL, payload)
 
 
@@ -139,7 +139,7 @@ async def run_benchmark(session_id, model):
         "session_id": session_id,
         "model": model,
     }
-    print(f"⚙️ Benchmark suite response:")
+    print("⚙️ Benchmark suite response:")
     await post_json(BENCH_URL, payload)
 
 

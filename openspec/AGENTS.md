@@ -2,16 +2,6 @@
 
 Instructions for AI coding assistants using OpenSpec for spec-driven development.
 
-## Theme
-
-See `openspec/THEME.md` for library-wide style and tone guidance.
-
-## Theme & Tone
-
-This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When editing specs or proposals, favor evocative, active language over dry, corporate phrasing. Use the project's lexicon (for example: "controller" → "master", "client" → "submissive", "tokens" → "photonic-whispers") where it clarifies meaning; never let style obscure correctness.
-
-Keep content technical first, atmospheric second. Add a short, single-line poetic fragment at the end of major proposals or design docs as a signature note.
-
 ## TL;DR Quick Checklist
 
 - Search existing work: `openspec spec list --long`, `openspec list` (use `rg` only for full-text search)

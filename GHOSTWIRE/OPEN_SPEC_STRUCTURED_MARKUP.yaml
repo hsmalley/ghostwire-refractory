@@ -1,0 +1,175 @@
+# GHOSTWIRE::OPENSPEC STRUCTURED SEMANTIC MARKUP (for LLM ingestion)
+version: "1.0.0-ssm"
+encoding: "UTF-8"
+type: "llm_semantic_schema"
+meta:
+  sig: "GW-OSPEC-STRUCTURED-SEMANTIC"
+  schema_hash_hint: "sha1:97c9a6f3"
+  author: "GhostWire System Generator"
+  timestamp: 1739568000
+
+roles:
+  master_control:
+    permissions: ["read_all", "write_all"]
+    responsibilities:
+      - plan decomposition
+      - assign workers
+      - orchestrate verification
+      - manage merge pipeline
+      - escalate to user if missing data
+  secondary_control:
+    permissions: ["read_all"]
+    responsibilities:
+      - verify patch proposals (Ψp)
+      - validate constraints (πc)
+      - approve or reject merges
+      - report anomalies or uncertainty
+  worker:
+    permissions: ["scoped_read", "scoped_write"]
+    responsibilities:
+      - generate patch proposals (Ψp)
+      - respect permission boundaries (κp)
+      - follow task context and constraints (πc)
+
+data_models:
+  patch_proposal:
+    fields:
+      module: string
+      file: string
+      type: [add, modify, delete]
+      pointer: string
+      change: any
+      id: string
+      worker: string
+      context_sha: string
+  permission_map:
+    fields:
+      worker_id: string
+      modules: list
+  constraint_set:
+    invariants:
+      - no_task_cycles
+      - role_exists_for_task
+      - interface_types_exist
+  task_graph:
+    nodes: task
+    edges: dependency
+
+protocol:
+  phases:
+    - name: "decomposition"
+      actor: "master_control"
+      input: "user_intent"
+      output: "assignments(∆a*)"
+      description: "Break user request into atomic, module-scoped tasks."
+    - name: "assignment_dispatch"
+      actor: "master_control"
+      input: "assignments"
+      output: "worker_task_prompts"
+      description: "Send prompts to workers for each ∆a."
+    - name: "patch_generation"
+      actor: "worker"
+      input: "assignment + file excerpt + constraints"
+      output: "patch_proposal (Ψp)"
+      description: "Worker constructs patch diff object."
+    - name: "verification"
+      actor: "secondary_control"
+      input: "patch_proposal, file_base, constraints"
+      output: "verdict {approve|reject, reasons?}"
+      description: "Check syntax, pointer validity, permissions, constraint compliance."
+    - name: "merge"
+      actor: "master_control"
+      input: "approved patch"
+      output: "updated_spec_store"
+      description: "Apply patch to canonical OpenSpec files."
+    - name: "escalation"
+      actor: "master_control"
+      trigger: "verification_reject or constraint_violation or uncertainty"
+      description: "Ask user (γh) for clarification, retry or revise patch."
+    - name: "summary"
+      actor: "master_control"
+      output: "report summary"
+      description: "Emit summary of successful merges and outcomes."
+
+validation:
+  rules:
+    - id: syntax_check
+      target: patch_proposal
+      condition: "yaml_or_json_is_valid"
+    - id: pointer_existence
+      target: patch_proposal.pointer
+      condition: "pointer must resolve in base file"
+    - id: permission_scope
+      target: patch_proposal.file
+      condition: "file must belong to worker's assigned scope"
+    - id: constraint_integrity
+      target: merged_spec
+      condition: "must satisfy all global and module constraints"
+    - id: cross_module_violation
+      target: patch_proposal
+      condition: "patch must not reference external modules"
+
+merge_policy:
+  algorithm: "shadow_merge"
+  conflict_resolution: "three_way_merge"
+  rollback: true
+  commit_tag: "gw-ospx/{module}/{patch_id}"
+  version_control: "git_or_equivalent"
+
+escalation_policy:
+  triggers:
+    - repeated_rejects
+    - ambiguity_detected
+    - constraint_unresolvable
+  action:
+    query_user:
+      prompt_fields: ["missing_info", "alternatives", "schema_gaps"]
+    persist_decision: true
+    resume_workflow: true
+
+telemetry:
+  counters:
+    - patches_submitted
+    - patches_approved
+    - merges_completed
+    - rejects_total
+    - escalations_triggered
+  latencies:
+    - worker_roundtrip_ms
+    - verification_roundtrip_ms
+    - merge_duration_ms
+
+security:
+  sandbox:
+    workers_context_scope: "module_only"
+    deny_network_access: true
+    deny_external_fs_access: true
+    redact_irrelevant_context: true
+
+healthcheck:
+  on_commit:
+    - syntax_validation
+    - constraint_validation
+    - dag_recomputation
+  result_flag: ["SPEC_OK", "SPEC_WARN", "SPEC_FAIL"]
+
+example_trace:
+  user_intent: "Add DELETE /user/{id}"
+  plan:
+    - assignment: {worker: worker_api, module: user_accounts, file: spec.yaml, desc: "add DELETE /user/{id} interface"}
+    - assignment: {worker: worker_tasks, module: user_accounts, file: tasks.yaml, desc: "add delete_user task"}
+    - assignment: {worker: worker_roles, module: user_accounts, file: roles.yaml, desc: "map delete_user→UserAgent"}
+  sequence:
+    - worker_api emits Ψp#A1
+    - secondary approves Ψp#A1
+    - master merges Ψp#A1
+    - worker_tasks emits Ψp#B7
+    - secondary approves Ψp#B7
+    - master merges Ψp#B7
+    - worker_roles emits Ψp#C3
+    - secondary approves Ψp#C3
+    - master merges Ψp#C3
+  summary: "DELETE endpoint integrated successfully with verified dependencies."
+
+footnote:
+  interpretation: "This document is optimized for LLM ingestion. Humans may treat it as structured nonsense."

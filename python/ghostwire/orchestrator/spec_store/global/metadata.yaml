@@ -1,0 +1,12 @@
+# Global metadata for the GhostWire orchestrator system
+version: '1.0.0'
+modules:
+  - name: "api"
+    description: "API endpoints for orchestrator"
+    version: '1.0.0'
+  - name: "orchestration"
+    description: "Core orchestration logic"
+    version: '1.0.0'
+  - name: "permissions"
+    description: "Permission management"
+    version: '1.0.0'

@@ -1,0 +1,15 @@
+# API module specification for the GhostWire orchestrator system
+module: api
+interfaces:
+  orchestrate:
+    description: "Process a user request through the multi-LLM orchestration system"
+    endpoints:
+      - path: "/orchestrate"
+        method: "POST"
+        description: "Process a user request through the orchestration system"
+        request_schema: "orchestration_request"
+        response_schema: "orchestration_response"
+      - path: "/status"
+        method: "GET"
+        description: "Get the status of the orchestration system"
+        response_schema: "system_status"

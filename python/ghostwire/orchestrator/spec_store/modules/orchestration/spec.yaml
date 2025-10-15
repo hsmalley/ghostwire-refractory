@@ -1,0 +1,16 @@
+# Orchestration module specification
+module: orchestration
+interfaces:
+  master:
+    description: "Master orchestrator functionality"
+    endpoints:
+      - path: "/orchestrate"
+        method: "POST"
+        description: "Process a user request through the orchestration system"
+        request_schema: "orchestration_request"
+        response_schema: "orchestration_response"
+      - path: "/propose_patch"
+        method: "POST"
+        description: "Propose a patch following the OpenSpec schema"
+        request_schema: "patch_proposal"
+        response_schema: "patch_proposal_response"

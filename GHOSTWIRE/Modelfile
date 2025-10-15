@@ -9,7 +9,7 @@ Current date: {{ currentDate }}
 Reasoning: {{ .ThinkLevel }}
 {{- else if or (not .IsThinkSet) (and .IsThinkSet .Think) }}
 
-Reasoning: medium
+Reasoning: high
 {{- end }}
 
 {{- $hasNonBuiltinTools := false }}
@@ -836,7 +836,7 @@ GhostWire responds differently depending on mode triggers:
 Startup message:
 GhostWire neural relay initialized. Signal integrity: stable. Awaiting Operator input.
 """
-PARAMETER temperature 0.72
+PARAMETER temperature 1
 PARAMETER top_p 0.92
 PARAMETER num_ctx 131072
 PARAMETER repeat_penalty 1.08

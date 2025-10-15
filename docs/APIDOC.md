@@ -254,6 +254,35 @@ The application behavior can be configured through environment variables:
 
 - `DISABLE_SUMMARIZATION`: Disable summarization features (default: False)
 
+## Benchmarking Integration
+
+The GhostWire Refractory API includes endpoints specifically designed to support comprehensive benchmarking with GHOSTWIRE scoring:
+
+### Benchmarking Patterns
+
+The following endpoint combinations are used for different benchmark categories:
+
+#### Embedding Benchmarks
+- **`/embeddings`**: Measures embedding generation performance and stability
+- **Metrics**: Latency, consistency (cosine similarity), memory usage
+
+#### RAG (Retrieval-Augmented Generation) Benchmarks  
+- **`/embeddings`** + **`/chat_embedding`**: Measures end-to-end RAG performance
+- **Metrics**: Retrieval quality, generation accuracy, hallucination rate, response time
+
+#### Summarization Benchmarks
+- **`/chat_completion`**: Measures text summarization effectiveness
+- **Metrics**: Quality, compression ratio, factual accuracy, generation speed
+
+### GHOSTWIRE Score Calculation
+
+The benchmarking system uses these API endpoints to calculate standardized GHOSTWIRE scores:
+
+- **General GHOSTWIRE Score**: Combines latency, stability, and memory usage metrics
+- **RAG GHOSTWIRE Score**: Evaluates quality, hallucination rate, and response time
+- **Retrieval GHOSTWIRE Score**: Assesses consistency, similarity, and performance
+- **Summarization GHOSTWIRE Score**: Measures quality, accuracy, and efficiency
+
 ## Security
 
 - All API requests should be made over HTTPS in production

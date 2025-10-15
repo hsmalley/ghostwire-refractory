@@ -10,6 +10,8 @@
 
 - [Data Flow](#data-flow)
 
+- [Benchmarking System](#benchmarking-system)
+
 - [API Reference](#api-reference)
 
 - [Performance Considerations](#performance-considerations)
@@ -92,7 +94,14 @@ python/
 │   └── utils/               # Utility functions
 ├── client/                  # Client applications
 ├── benchmarks/              # Performance tools
-└── tests/                   # Unit & integration tests
+│   ├── embedding_benchmarks.py      # Embedding performance benchmarks
+│   ├── rag_benchmarks.py            # RAG (Retrieval-Augmented Generation) benchmarks
+│   ├── summarization_benchmarks.py  # Text summarization benchmarks
+│   └── model_comparison_benchmark.py # Model comparison with GHOSTWIRE scoring
+├── tests/                   # Unit & integration tests
+│   └── benchmark/           # Benchmark-specific tests
+└── utils/                   # Common utilities
+    └── ghostwire_scoring.py # GHOSTWIRE scoring functions
 ```
 
 ### Core Modules
@@ -218,6 +227,62 @@ sequenceDiagram
     SVC->>API: Stream response
     API->>C: Return chunks
 ```
+
+## Benchmarking System
+
+### Overview
+
+The GhostWire Refractory benchmarking system includes a standardized scoring mechanism called GHOSTWIRE scores, which enable objective comparison of AI model performance across multiple dimensions including latency, quality, stability, and resource efficiency.
+
+### GHOSTWIRE Scoring Architecture
+
+The GHOSTWIRE scoring system provides multiple specialized scoring functions:
+
+- **General GHOSTWIRE Score**: Evaluates basic performance metrics (latency, stability, memory usage)
+- **RAG GHOSTWIRE Score**: Assesses Retrieval-Augmented Generation quality, hallucination rate, and response time
+- **Retrieval GHOSTWIRE Score**: Measures retrieval consistency, similarity, and performance
+- **Summarization GHOSTWIRE Score**: Evaluates text summarization quality, accuracy, and performance
+- **Comprehensive GHOSTWIRE Score**: Advanced scoring incorporating multiple performance dimensions
+
+### Benchmark Categories
+
+#### 1. Embedding Benchmarks (`embedding_benchmarks.py`)
+- Tests embedding generation performance and stability
+- Measures latency, memory usage, and embedding consistency
+- Computes embedding-specific GHOSTWIRE scores
+
+#### 2. RAG Benchmarks (`rag_benchmarks.py`)
+- Evaluates Retrieval-Augmented Generation systems
+- Tests retrieval performance and generation quality
+- Calculates RAG-specific GHOSTWIRE scores
+
+#### 3. Summarization Benchmarks (`summarization_benchmarks.py`)
+- Assesses text summarization effectiveness
+- Measures quality, factual accuracy, and generation speed
+- Computes summarization-specific GHOSTWIRE scores
+
+#### 4. Model Comparison Benchmark (`model_comparison_benchmark.py`)
+- Comprehensive evaluation across all benchmark categories
+- Ranks models based on overall GHOSTWIRE scores
+- Provides comparative analysis for model selection
+
+### GHOSTWIRE Scoring Module
+
+The `ghostwire_scoring.py` utility module contains all scoring algorithms and provides:
+
+- Standardized scoring functions with configurable weights
+- Normalized output in [0,1] range where higher is better
+- Flexible architecture for adding new scoring categories
+- Integration with all benchmark modules
+
+### Benchmark Testing
+
+The system includes comprehensive pytest-based testing with:
+
+- Dedicated benchmark test suite in `tests/benchmark/`
+- `@pytest.mark.benchmark` markers for test identification
+- JSON structure validation for benchmark outputs
+- Continuous integration workflow with dedicated benchmark job
 
 ## API Reference
 

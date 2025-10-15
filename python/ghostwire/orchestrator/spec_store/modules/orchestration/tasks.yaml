@@ -1,0 +1,43 @@
+# Orchestration module tasks
+tasks:
+  - name: "orchestrate_user_request"
+    description: "Process a user request through the multi-LLM orchestration system"
+    steps:
+      - step: 1
+        action: "decompose_request"
+        description: "Decompose the user request into subtasks"
+        input: "user_request"
+        output: "subtasks"
+      - step: 2
+        action: "validate_permissions"
+        description: "Validate permissions for each subtask"
+        input: "subtasks, context"
+        output: "validated_tasks"
+      - step: 3
+        action: "distribute_tasks"
+        description: "Distribute tasks among available LLM clients"
+        input: "validated_tasks"
+        output: "distributed_results"
+      - step: 4
+        action: "compile_results"
+        description: "Compile individual results into final response"
+        input: "distributed_results, original_request"
+        output: "final_response"
+  - name: "propose_patch"
+    description: "Propose a formal patch following OpenSpec schema"
+    steps:
+      - step: 1
+        action: "create_patch_proposal"
+        description: "Create a formal patch proposal"
+        input: "module, file, type, pointer, change, worker, context"
+        output: "patch_proposal"
+      - step: 2
+        action: "validate_patch"
+        description: "Validate the patch through secondary validator"
+        input: "patch_proposal"
+        output: "validation_result"
+      - step: 3
+        action: "return_result"
+        description: "Return the proposal and validation result"
+        input: "patch_proposal, validation_result"
+        output: "patch_proposal_response"

@@ -1,0 +1,26 @@
+# Global constraints for the GhostWire orchestrator system
+constraints:
+  - name: "max_concurrent_tasks"
+    type: "numeric"
+    value: 10
+    description: "Maximum number of concurrent tasks allowed in orchestration"
+  - name: "min_permission_level"
+    type: "string"
+    value: "read"
+    description: "Minimum permission level required for basic orchestration"
+  - name: "session_timeout_minutes"
+    type: "numeric"
+    value: 60
+    description: "Default session timeout in minutes"
+  - name: "max_request_size"
+    type: "numeric"
+    value: 10000  # 10KB
+    description: "Maximum size of user request in characters"
+  - name: "dag_module_dependencies"
+    type: "boolean"
+    value: true
+    description: "Ensure module dependencies form a DAG"
+  - name: "task_role_validation"
+    type: "boolean"
+    value: true
+    description: "Ensure all task roles exist in module roles"

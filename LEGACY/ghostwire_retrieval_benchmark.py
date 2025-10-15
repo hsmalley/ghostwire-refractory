@@ -27,7 +27,6 @@ Validates:
 """
 
 import asyncio
-import json
 import time
 
 import httpx
@@ -38,9 +37,9 @@ try:
     from langchain_openai import OpenAIEmbeddings
 except ImportError:
     from langchain_community.embeddings import OpenAIEmbeddings
-from langchain_community.vectorstores import Qdrant
-
 import os
+
+from langchain_community.vectorstores import Qdrant
 
 CONTROLLER_URL = os.getenv("CONTROLLER_URL", "http://localhost:8000") + "/v1"
 

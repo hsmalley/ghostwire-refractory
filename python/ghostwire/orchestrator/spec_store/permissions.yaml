@@ -1,0 +1,18 @@
+# Worker permissions for the GhostWire orchestrator system
+worker_permissions:
+  api_worker:
+    allowed_modules:
+      - "api"
+    allowed_files:
+      - "spec.yaml"
+  orchestration_worker:
+    allowed_modules:
+      - "orchestration"
+    allowed_files:
+      - "tasks.yaml"
+      - "spec.yaml"
+  permission_worker:
+    allowed_modules:
+      - "permissions"
+    allowed_files:
+      - "roles.yaml"

@@ -10,13 +10,16 @@ See `openspec/THEME.md` for repository-wide style and tone guidance.
 ## Current Status
 - **System Implemented**: ✅ Core functionality complete
 - **Code Cleanup**: ✅ Completed (archived: cleanup-unused-code-2025-10-14)
-- **Spec Documentation**: ✅ All capabilities documented with comprehensive requirements (149 total)
+- **Spec Documentation**: ✅ All capabilities documented with comprehensive requirements (155 total)
 - **Token Optimization**: 🔄 In planning phase (token-optimization-features)
 
 ## Active Changes
 - `token-optimization-features`: Implement token optimization, document storage, and Qdrant compatibility
   - 0/13 tasks completed
   - Priority: High (based on GHOSTWIRE_GOALS.md)
+- `add-openspec-orchestrator`: Multi-LLM orchestration with Master/Worker pattern
+  - 11/13 tasks completed
+  - Priority: Medium (enhancement to existing functionality)
 
 ## Capabilities
 
@@ -80,6 +83,14 @@ See `openspec/THEME.md` for repository-wide style and tone guidance.
 - Thread-safe operations
 - Configuration parameters
 
+### ✅ Orchestrator (6 requirements)
+- Multi-LLM coordination with Master/Worker pattern
+- Task decomposition and distribution
+- Permission management for orchestrated tasks
+- Safe code patching capabilities
+- Integration with benchmarking and GHOSTWIRE scoring
+- Session-based authentication for distributed tasks
+
 ## Next Steps
 1. Begin implementation of token optimization features
 2. Implement document storage capability
@@ -92,7 +103,7 @@ See `openspec/THEME.md` for repository-wide style and tone guidance.
 - Single-server deployment (horizontal scaling possible)
 
 ## Completed Enhancements
-- Comprehensive requirements for all capabilities (149 total)
+- Comprehensive requirements for all capabilities (155 total)
 - Detailed scenario definitions for all requirements
 - Error handling and validation requirements
 - Configuration and security requirements

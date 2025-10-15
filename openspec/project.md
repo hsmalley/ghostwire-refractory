@@ -20,6 +20,22 @@ See `openspec/THEME.md` for repository-wide style and tone guidance.
 - passlib[bcrypt] (Password hashing)
 - python-jose[cryptography] (JWT handling)
 
+## Project Capabilities
+
+The GhostWire Refractory system consists of several key capabilities:
+
+- **API**: REST endpoints with OpenAI, Qdrant, and Ollama compatibility
+- **Authentication**: JWT-based authentication and rate limiting  
+- **CLI**: Command-line interface for system management
+- **Configuration**: Settings management with Pydantic BaseSettings
+- **Database**: SQLite connection pooling and data access
+- **Embedding**: Vector generation from text inputs
+- **Memory**: Persistent storage with vector similarity search
+- **Models**: Pydantic data models for validation
+- **Orchestrator**: Multi-LLM coordination with Master/Worker pattern
+- **Utils**: Common helper functions and validation
+- **Vector**: HNSW index management for similarity search
+
 ## Project Conventions
 
 ### Code Style

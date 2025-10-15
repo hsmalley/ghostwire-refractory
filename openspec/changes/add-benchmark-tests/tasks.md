@@ -1,0 +1,11 @@
+## Implementation
+- [ ] Move legacy benchmark scripts into `tests/benchmark/`.
+- [ ] Add `@pytest.mark.benchmark` markers to each test.
+- [ ] Update `tests/benchmark/test_ghostwire_benchmarks.py` imports to point to the new module locations.
+- [ ] Ensure `pytest.ini` includes `--maxfail=0` for benchmark tests.
+- [ ] Modify CI workflow (`.github/workflows/*`) to add a dedicated `benchmark` job that runs `pytest -m benchmark`.
+- [ ] Add a stub test that verifies the benchmark output JSON structure.
+- [ ] Document benchmark data sources in `docs/benchmark.md`.
+- [ ] Run local sanity check with `pytest -m benchmark`.
+- [ ] Validate with `openspec validate add-benchmark-tests --strict`.
+- [ ] Push and open a PR after approval.

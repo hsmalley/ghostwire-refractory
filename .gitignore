@@ -13,6 +13,8 @@ python/tests/__pycache__/
 python/benchmarks/__pycache__/
 python/client/__pycache__/
 *.db
+*.db-wal
+*.db-shm
 *.bin
 *.log
 *.csv
@@ -31,3 +33,4 @@ htmlcov/
 *.swp
 *.swo
 *~
+

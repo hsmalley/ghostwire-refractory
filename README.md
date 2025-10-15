@@ -1,6 +1,6 @@
 # GhostWire Refractory
 
-![GhostWire: photonic-whisper sigil](GHOSTWIRE_GPT/ghostwire_comming_soon.png)
+![](GHOSTWIRE_GPT/ghostwire_comming_soon.png "GhostWire: photonic-whisper sigil")
 
 A neural network-based chat system with memory that stores message embeddings in SQLite and uses HNSW for efficient vector similarity search.
 

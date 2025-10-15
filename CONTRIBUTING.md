@@ -66,3 +66,17 @@ npx markdownlint-cli2 .
 ```
 
 If you use the repository `uv` workspace helper, you can run the npm command via `uv run` if you prefer.
+
+## Editor configuration
+
+We keep a project-wide `.editorconfig` to ensure consistent formatting across editors and platforms.
+Quick summary of the preferences in this repo:
+
+- Python: 4 spaces, UTF-8, trim trailing whitespace, ensure final newline
+- Markdown: 2 spaces, preserve trailing whitespace (some docs intentionally include it)
+- YAML: 2 spaces, preserve trailing whitespace
+- JS/JSON/CSS/TS: 2 spaces, trim trailing whitespace
+- Makefile: tabs for indentation (Make requires tabs)
+
+Install an EditorConfig plugin for your editor (most editors support this) and run `pre-commit install` to enable automatic hooks locally. Pre-commit will apply many formatting fixes automatically.
+

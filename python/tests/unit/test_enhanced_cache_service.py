@@ -15,13 +15,18 @@ class TestEnhancedCacheService:
     def setup_method(self):
         """Setup method to create a cache service instance for each test"""
         # Use a temporary database for testing
-        self.temp_db = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
-        self.temp_db.close()
+        fd, temp_db_path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)  # Close the file descriptor immediately
+        self.temp_db_path = temp_db_path
 
         # Patch the database path to use our temporary database
         self.original_db_path = os.environ.get("DB_PATH")
-        os.environ["DB_PATH"] = self.temp_db.name
-
+        os.environ["DB_PATH"] = self.temp_db_path
+        import os
+        import tempfile
+        fd, temp_db_path = tempfile.mkstemp(suffix=".db")
+        os.close(fd)
+        self.temp_db_path = temp_db_path
         self.service = CacheService()
 
     def teardown_method(self):
@@ -33,10 +38,9 @@ class TestEnhancedCacheService:
             del os.environ["DB_PATH"]
 
         # Clean up temporary database file
-        try:
+        import contextlib
+        with contextlib.suppress(OSError):
             os.unlink(self.temp_db.name)
-        except OSError:
-            pass
 
     def test_initialize_cache_tables(self):
         """Test that cache tables are initialized correctly"""

@@ -88,7 +88,7 @@ class TestEnhancedRAGService:
 
         # Run the async test
         try:
-            result = asyncio.run(test_async())
+            asyncio.run(test_async())
             # Should return cached response from similarity cache
             # Note: This test might be complex due to the async nature and multiple mocks needed
             pass
@@ -114,7 +114,6 @@ class TestEnhancedRAGService:
         mock_embedding_service.embed_text = AsyncMock(return_value=[0.1] * 768)
 
         # Mock the generate_response method to avoid HTTP calls
-        original_generate = self.service.generate_response
         self.service.generate_response = AsyncMock(return_value=AsyncMock())
 
         # Mock the async generator to return a simple response
@@ -136,12 +135,10 @@ class TestEnhancedRAGService:
             return "".join(results)
 
         # Run the async test
-        try:
-            result = asyncio.run(test_async())
+        import contextlib
+        with contextlib.suppress(Exception):
+            asyncio.run(test_async())
             # Should have attempted to cache the response
-        except Exception:
-            # Handle any async issues
-            pass
 
         # Verify exact cache storage was attempted
         # This would require more detailed mocking of the internal flow

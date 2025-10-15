@@ -2,6 +2,10 @@
 
 ## Purpose
 GhostWire Refractory is a neural network-based chat system with persistent memory capabilities that enables contextual conversations through vector similarity search. The system stores message embeddings in SQLite and uses HNSW (Hierarchical Navigable Small World) for efficient vector similarity search. This is a heavily themed cyberpunk-inspired project that combines advanced retrieval-augmented generation (RAG) with a distinctive aesthetic and BDSM-infused metaphors throughout its architecture and documentation.
+ 
+## Theme
+
+See `openspec/THEME.md` for repository-wide style and tone guidance.
 
 ## Tech Stack
 - Python 3.12+ (Language)

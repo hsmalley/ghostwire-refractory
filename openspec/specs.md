@@ -1,5 +1,9 @@
 # OpenSpec Change Proposal
 
+## Theme & Tone
+
+This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When authoring specs or deltas, prefer clear technical language first, then tasteful theatricality. Use the project's lexicon (e.g., "controller" → "master", "client" → "submissive") only where it aids clarity. Add a one-line poetic residue at the end of major proposals as a signature.
+
 ## Title: GhostWire Token Optimization & Memory Enhancement
 
 ## Description

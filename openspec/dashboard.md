@@ -3,6 +3,10 @@
 ## Project Overview
 A neural network-based chat system with memory that stores message embeddings in SQLite and uses HNSW for efficient vector similarity search, with a distinctive cyberpunk aesthetic.
 
+## Theme
+
+See `openspec/THEME.md` for repository-wide style and tone guidance.
+
 ## Current Status
 - **System Implemented**: ✅ Core functionality complete
 - **Code Cleanup**: ✅ Completed (archived: cleanup-unused-code-2025-10-14)

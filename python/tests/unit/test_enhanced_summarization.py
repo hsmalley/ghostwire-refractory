@@ -20,7 +20,7 @@ class TestEnhancedSummarizationService:
         """Test should_summarize with text below threshold"""
         # Short text below threshold
         short_text = "This is a short text."
-        result = await self.service.should_summarize(short_text)
+        await self.service.should_summarize(short_text)
         # Depending on settings, this might be False if DISABLE_SUMMARIZATION is True
         # or if text is below SUMMARY_THRESHOLD_CHARS
 
@@ -30,7 +30,7 @@ class TestEnhancedSummarizationService:
         long_text = (
             "This is a much longer text. " * 100
         )  # Should be well above threshold
-        result = await self.service.should_summarize(long_text)
+        await self.service.should_summarize(long_text)
         # Depending on settings, this might be True if text is above SUMMARY_THRESHOLD_CHARS
         # and summarization is not disabled
 

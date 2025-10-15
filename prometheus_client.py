@@ -20,7 +20,7 @@ class _BaseMetric:
 
     def labels(self, **labels):
         # Return a proxy that stores values keyed by the labels tuple.
-        key = tuple(labels.get(l, "") for l in self._labelnames)
+        key = tuple(labels.get(label_name, "") for label_name in self._labelnames)
         return _MetricProxy(self, key)
 
 

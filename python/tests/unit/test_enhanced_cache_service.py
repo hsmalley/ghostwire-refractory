@@ -35,7 +35,7 @@ class TestEnhancedCacheService:
         # Clean up temporary database file
         import contextlib
         with contextlib.suppress(OSError):
-            os.unlink(self.temp_db.name)
+            os.unlink(self.temp_db_path)
 
     def test_initialize_cache_tables(self):
         """Test that cache tables are initialized correctly"""

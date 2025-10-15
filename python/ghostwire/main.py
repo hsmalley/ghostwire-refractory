@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
     async def startup_event():
         # Setup logging according to configuration
         setup_logging()
-        
+
         logger = logging.getLogger(__name__)
         logger.info("⚡️ Starting GhostWire Refractory...")
         # Initialize HNSW index

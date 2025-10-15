@@ -5,17 +5,11 @@ A neural network-based chat system with memory that stores message embeddings in
 ## Features
 
 - Memory-augmented chat with semantic search
-
 - Support for multiple embedding and generation models through Ollama
-
 - Fast similarity search using HNSW index
-
 - REST API with OpenAI-compatible endpoints
-
 - Rate limiting and authentication
-
 - Comprehensive benchmarking tools
-
 - Improved code quality, security, and maintainability
 
 ## Architecture
@@ -52,7 +46,6 @@ to another language with a clear, tested reference implementation.
 ## Installation
 
 1. Clone the repository
-
 2. Install dependencies (requires Python 3.12+):
 
 Using pip (requires build tools for hnswlib):
@@ -180,17 +173,11 @@ PYTHONPATH=python uv run pytest python/tests/
 The application requires:
 
 - Python 3.12+
-
 - FastAPI
-
 - SQLite with APSW
-
 - hnswlib for vector indexing
-
 - httpx for HTTP client operations
-
 - pydantic for data validation
-
 - numpy for numerical operations
 
 See `pyproject.toml` for the complete list of dependencies.
@@ -198,13 +185,9 @@ See `pyproject.toml` for the complete list of dependencies.
 ## Security
 
 - Rate limiting to prevent API abuse
-
 - Input validation to prevent injection attacks
-
 - Authentication for protected endpoints
-
 - CORS configuration to prevent XSS attacks
-
 - Secure password hashing
 
 ## Development
@@ -212,17 +195,11 @@ See `pyproject.toml` for the complete list of dependencies.
 This is a refactored version of the original GhostWire application with:
 
 - Proper separation of concerns
-
 - Modular architecture
-
 - Comprehensive error handling
-
 - Security measures
-
 - Test coverage
-
 - Documentation
-
 - Code quality improvements (validated with ruff)
 
 For contribution guidance (theme usage, opt-outs, and quick-run instructions) see `CONTRIBUTING.md` at the repository root.
@@ -245,35 +222,23 @@ Optional (node/husky): if you prefer Git hooks managed by Husky and lint-staged 
 ### Code Quality Enhancement (October 2025)
 
 - ✅ Resolved all critical code quality issues identified by `ruff check`
-
 - ✅ Fixed security vulnerabilities related to exception handling
-
 - ✅ Improved import organization and code structure
-
 - ✅ Enhanced documentation and comments
-
 - ✅ Maintained full functionality while improving maintainability
-
 - ✅ Verified all core unit tests pass (6/7 tests passing, 1 test mock issue)
-
 - ✅ Confirmed all benchmarking tools work correctly
-
 - ✅ Proper environment variable configuration with JSON array support
 
 ### Key Security Fixes
 
 - Proper exception chaining using `from` clause to preserve error context
-
 - Corrected environment variable parsing for list fields (JSON format)
-
 - Improved input validation and error handling
 
 ### Performance and Maintainability
 
 - Cleaner code organization with consistent import patterns
-
 - Better separation of concerns in modules
-
 - Improved error messages and logging
-
 - Enhanced type hints for better code documentation

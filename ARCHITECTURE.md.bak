@@ -1,21 +1,13 @@
 # GhostWire Refractory Architecture
 
 ## Table of Contents
-
 - [Overview](#overview)
-
 - [System Architecture](#system-architecture)
-
 - [Component Architecture](#component-architecture)
-
 - [Data Flow](#data-flow)
-
 - [API Reference](#api-reference)
-
 - [Performance Considerations](#performance-considerations)
-
 - [Security Model](#security-model)
-
 - [Scalability & Deployment](#scalability--deployment)
 
 ## Overview
@@ -23,17 +15,11 @@
 GhostWire Refractory is a neural network-based chat system with persistent memory capabilities that enables contextual conversations through vector similarity search. The system stores message embeddings in SQLite and uses HNSW (Hierarchical Navigable Small World) for efficient vector similarity search.
 
 ### Key Characteristics
-
 - **Language**: Python 3.8+
-
 - **Framework**: FastAPI with async/await patterns
-
 - **Database**: SQLite with connection pooling
-
 - **Vector Indexing**: HNSW for fast similarity search
-
 - **API Compatibility**: OpenAI, Qdrant, and Ollama-compatible interfaces
-
 - **Architecture Pattern**: Hexagonal/Ports & Adapters
 
 ## System Architecture
@@ -98,49 +84,37 @@ python/
 ### Core Modules
 
 #### 1. Configuration Module (`config.settings`)
-
 - **Responsibility**: Environment configuration and settings management
-
 - **Key Classes**: `Settings` (Pydantic BaseSettings)
-
 - **Features**: 
   - Environment variable loading
   - Type validation
   - Default value management
 
 #### 2. Database Module (`database.*`)
-
 - **Responsibility**: Connection pooling and data access
-
 - **Key Classes**: 
   - `ConnectionPool`: Thread-safe connection pooling
   - `MemoryRepository`: Data access operations
-
 - **Features**:
   - SQLite connection pooling
   - Transaction management
   - Schema initialization
 
 #### 3. Vector Module (`vector.hnsw_index`)
-
 - **Responsibility**: HNSW index management
-
 - **Key Classes**: `HNSWIndexManager`
-
 - **Features**:
   - Vector similarity search
   - Persistent index loading
   - Thread-safe operations
 
 #### 4. Services Module (`services.*`)
-
 - **Responsibility**: Business logic encapsulation
-
 - **Key Classes**:
   - `MemoryService`: Memory operations
   - `EmbeddingService`: Embedding generation
   - `RAGService`: Retrieval-Augmented Generation
-
 - **Features**:
   - Business rule implementation
   - Cross-module orchestration
@@ -236,7 +210,6 @@ sequenceDiagram
 ### Request/Response Models
 
 #### Chat Request Model
-
 ```
 ChatEmbeddingRequest {
   session_id: string (alphanumeric, hyphens, underscores only)
@@ -248,7 +221,6 @@ ChatEmbeddingRequest {
 ```
 
 #### Embedding Request Model
-
 ```
 EmbeddingRequest {
   input: string | [string]
@@ -273,7 +245,6 @@ EmbeddingRequest {
 The system uses HNSW for approximate nearest neighbor search with the following characteristics:
 
 #### HNSW Configuration
-
 ```python
 HNSW_MAX_ELEMENTS = 100_000  # Max elements in index
 HNSW_EF_CONSTRUCTION = 200   # Construction parameter
@@ -292,21 +263,14 @@ HNSW_EF = 50                # Query parameter
 ### Database Performance
 
 #### Connection Pooling
-
 - Pool size: 5-10 connections
-
 - Overflow: 10 additional connections
-
 - Timeout: 30 seconds
 
 #### SQLite Optimizations
-
 - WAL (Write-Ahead Logging) mode
-
 - Normal synchronous mode
-
 - 1000-row cache size
-
 - Memory-optimized temp storage
 
 ### Memory Management
@@ -314,11 +278,8 @@ HNSW_EF = 50                # Query parameter
 $$ \text{Memory Usage} = \text{HNSW Index} + \text{SQLite Cache} + \text{Application Memory} $$
 
 For typical deployment:
-
 - HNSW Index: ~$d \times n \times 4$ bytes (where $d$ = embedding dimension, $n$ = number of vectors)
-
 - SQLite: ~50-100 MB
-
 - Application: ~100-200 MB
 
 ## Security Model
@@ -326,19 +287,13 @@ For typical deployment:
 ### Authentication & Authorization
 
 #### JWT-Based Authentication
-
 - Algorithm: HS256 (with option for RS256)
-
 - Expiration: 30 minutes (configurable)
-
 - Secret key: Environment-configured
 
 #### Rate Limiting
-
 - Requests per window: 100 (configurable)
-
 - Time window: 60 seconds (configurable)
-
 - Implemented via middleware
 
 ### Input Validation
@@ -354,11 +309,8 @@ For typical deployment:
 ### Data Protection
 
 #### Sensitive Information
-
 - API keys stored in environment variables
-
 - Database encryption possible with SQLite extensions
-
 - No sensitive data in logs by default
 
 ## Scalability & Deployment
@@ -397,9 +349,7 @@ For typical deployment:
 ### Configuration Parameters
 
 #### Environment Variables
-
 ```python
-
 # Server configuration
 HOST: str = "0.0.0.0"
 PORT: int = 8000
@@ -427,7 +377,6 @@ ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 ### Docker Multi-Stage Build
 
 ```dockerfile
-
 # Build stage
 FROM python:3.9-slim as builder
 RUN apt-get update && apt-get install -y build-essential
@@ -462,13 +411,9 @@ Response time can be approximated as:
 $$ T_{response} = T_{embedding} + T_{retrieval} + T_{generation} + T_{overhead} $$
 
 Where:
-
 - $T_{embedding}$: Time to generate query embedding
-
 - $T_{retrieval}$: Time for vector similarity search
-
 - $T_{generation}$: Time for LLM response generation
-
 - $T_{overhead}$: HTTP and processing overhead
 
 ### Memory Model
@@ -478,13 +423,9 @@ Total memory consumption:
 $$ M_{total} = M_{app} + M_{hnsw} + M_{sqlite} + M_{cache} $$
 
 Where:
-
 - $M_{app}$: Application memory (~50-100 MB)
-
 - $M_{hnsw}$: HNSW index memory ($d \times n \times 4 \times f$ bytes)
-
 - $M_{sqlite}$: SQLite cache memory (~20-50 MB)
-
 - $M_{cache}$: Runtime cache memory (~10-30 MB)
 
 ---

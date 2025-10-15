@@ -12,4 +12,4 @@
 - [x] 1.10 Add response caching for repeated requests
 - [x] 1.11 Write unit tests for new functionality
 - [x] 1.12 Write integration tests for Qdrant compatibility
-- [ ] 1.13 Perform token usage benchmarks
+- [x] 1.13 Perform token usage benchmarks

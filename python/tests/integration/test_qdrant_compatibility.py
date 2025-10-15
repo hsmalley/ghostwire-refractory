@@ -6,7 +6,7 @@ import time
 
 from fastapi.testclient import TestClient
 
-from ...ghostwire.main import app
+from python.ghostwire.main import app
 
 # Skip these tests by default to avoid external dependencies
 # Uncomment the line below to run these tests

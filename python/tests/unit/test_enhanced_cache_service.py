@@ -22,11 +22,6 @@ class TestEnhancedCacheService:
         # Patch the database path to use our temporary database
         self.original_db_path = os.environ.get("DB_PATH")
         os.environ["DB_PATH"] = self.temp_db_path
-        import os
-        import tempfile
-        fd, temp_db_path = tempfile.mkstemp(suffix=".db")
-        os.close(fd)
-        self.temp_db_path = temp_db_path
         self.service = CacheService()
 
     def teardown_method(self):

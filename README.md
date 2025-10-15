@@ -379,6 +379,30 @@ This script will:
 
 See `scripts/run_local.sh` and `.env.example` for details.
 
+### Makefile Development Targets
+
+For developers who prefer explicit make commands, the project includes a Makefile with common development targets:
+
+```bash
+# Set up the development environment
+make setup
+
+# Run the GhostWire Refractory application
+make run
+
+# Run tests
+make test
+
+# Run code linting
+make lint
+
+# Seed the database with sample data
+make seed
+
+# See all available targets
+make help
+```
+
 ### Document Ingestion
 
 The project includes a document ingestion script for importing text documents into the vector database:

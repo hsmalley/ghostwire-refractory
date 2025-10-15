@@ -396,6 +396,26 @@ python scripts/import_documents.py docs/ --dry-run
 
 See `scripts/README.md` for detailed usage instructions.
 
+### Sample Data Seeding
+
+Populate the database with sample sessions, messages, and embeddings for local development:
+
+```bash
+# Seed the default database with sample data
+python scripts/seed_sample_data.py
+
+# Seed with a custom database path
+python scripts/seed_sample_data.py --db-path /path/to/my.db
+
+# Force re-seeding even if data already exists
+python scripts/seed_sample_data.py --force
+
+# See all options
+python scripts/seed_sample_data.py --help
+```
+
+This creates 5 sample sessions with multiple conversations each, helping you explore the application without manually creating data. The seeder is idempotent by default to prevent duplicate entries.
+
 ---
 
 *This repository carries the GhostWire aesthetic: neon-cyberpunk, slightly haunted, and concise. When contributing, see `CONTRIBUTING.md` for guidance on where to use the project's thematic flavor (neon/cyberpunk, Neon Oracle voice) vs. neutral, public-facing documentation.*

@@ -4,43 +4,40 @@ This directory contains utility scripts for working with the GhostWire Refractor
 
 ## Available Scripts
 
-### `import_documents.py`
+### `seed_sample_data.py`
 
-A CLI tool for ingesting documents into the GhostWire Refractory vector database.
-Supports txt/md/code inputs, chunking, optional summarization, embedding generation,
-and storage into the local vector DB.
+A CLI tool for seeding the GhostWire Refractory database with sample data for local development and testing.
 
 Usage:
-
 ```bash
-# Ingest a single file
-python scripts/import_documents.py README.md
+# Seed with default settings
+python scripts/seed_sample_data.py
 
-# Ingest a directory with summarization
-python scripts/import_documents.py docs/ --summarize
+# Seed with verbose output
+python scripts/seed_sample_data.py --verbose
 
-# Dry run (preview without storing)
-python scripts/import_documents.py src/ --dry-run
+# Force re-seeding even if data already exists
+python scripts/seed_sample_data.py --force
 
-# Verbose output
-python scripts/import_documents.py docs/ --verbose
+# Seed to a custom database path
+python scripts/seed_sample_data.py --db-path custom.db
 ```
 
 Options:
+- `--db-path`: Path to SQLite database (defaults to `DB_PATH` from settings)
+- `--embed-dim`: Embedding dimension (defaults to `EMBED_DIM` from settings)
+- `--force`: Force insertion even if sample data already exists
+- `--verbose`: Enable verbose output
 
-- `--dry-run`: Perform a dry run without actually storing documents
-- `--summarize`: Enable summarization of large chunks
-- `--chunk-size`: Size of chunks in tokens/words (default: 500)
-- `--overlap-size`: Size of overlap between chunks (default: 50)
-- `--extensions`: File extensions to process (default: .txt .md)
-- `--verbose`: Enable verbose logging
+### Sample Data Seeding
 
-### Other Scripts
+The script will:
+- Create tables if they don't exist
+- Insert sample sessions, messages, and synthetic embeddings
+- Generate realistic sample data that mimics actual usage
+- Populate the database with 15 sample memory entries across 5 sessions
 
-Additional scripts may be available in subdirectories:
-
-- `benchmarks/`: Performance testing scripts
-- `tests/`: Unit and integration test runners
+The seeder is idempotent by default to prevent duplicate entries.
 
 ## Running Scripts
 
@@ -56,7 +53,6 @@ See individual script documentation for requirements.
 ## Environment Variables
 
 Scripts respect the same environment variables as the main application:
-
 - `DB_PATH`: Path to SQLite database (default: "memory.db")
 - `LOCAL_OLLAMA_URL`: Local Ollama API URL (default: "http://localhost:11434")
 - `REMOTE_OLLAMA_URL`: Remote Ollama API URL (default: "http://100.103.237.60:11434")

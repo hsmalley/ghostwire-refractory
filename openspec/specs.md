@@ -16,6 +16,7 @@ The GhostWire Refractory system is organized into several key capabilities, each
 - **Embedding**: Vector generation from text inputs
 - **Memory**: Persistent storage with vector similarity search
 - **Models**: Pydantic data models for validation
+- **Testing**: Comprehensive testing framework with unit, integration, and benchmark tests using pytest and the GHOSTWIRE scoring system
 - **Utils**: Common helper functions and validation
 - **Vector**: HNSW index management for similarity search
 - **Orchestrator**: Multi-LLM coordination with Master/Worker pattern
@@ -127,3 +128,18 @@ config/settings.py - Remote LLM optimization settings
 - Integration tests for Qdrant endpoint compatibility
 - Performance benchmarks to verify token usage reduction
 - End-to-end tests ensuring all existing functionality remains intact
+
+### Testing Framework
+
+The GhostWire Refractory testing framework provides comprehensive quality assurance through a multi-layered approach:
+
+1. **Unit Tests**: Fast, isolated tests for individual functions and classes using pytest
+2. **Integration Tests**: Tests for component interactions and external service integrations
+3. **Benchmark Tests**: Performance measurements using the GHOSTWIRE scoring system
+
+The framework is organized in `python/tests/` with subdirectories for each test type:
+- `python/tests/unit/` - Fast unit tests for individual functions
+- `python/tests/integration/` - Component interaction tests
+- `python/tests/benchmark/` - Performance evaluation with GHOSTWIRE scores
+
+All tests follow pytest conventions with clear naming and structure. For detailed specifications, see `openspec/specs/testing/`.

@@ -2,7 +2,7 @@
 
 ## Implementation
 
-- [ ] Package `fabric` and optional `mitogen` in `requirements.txt`.
+- [x] Package `fabric` and optional `mitogen` in `requirements.txt`.
 - [ ] Implement `scripts/llama_deploy.py`.
 - [ ] Create helper to render systemd unit template.
 - [ ] Write unit tests for SSH command generation.

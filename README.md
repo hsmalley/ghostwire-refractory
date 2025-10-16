@@ -245,16 +245,99 @@ curl -X POST http://localhost:8000/api/v1/orchestrator/orchestrate \
 Run the test suite:
 
 ```bash
-cd /path/to/ghostwire-refractory  # Project root
+cd /Users/hugh/git/ghostwire-refractory  # Project root
 PYTHONPATH=python uv run python -m pytest python/tests/
 ```
 
 Or with pytest discovery:
 
 ```bash
-cd /path/to/ghostwire-refractory  # Project root
+cd /Users/hugh/git/ghostwire-refractory  # Project root
 PYTHONPATH=python uv run pytest python/tests/
 ```
+
+### Test Categories
+
+The test suite is organized into three main categories:
+
+1. **Unit Tests** - Fast, isolated tests for individual functions and classes:
+   ```bash
+   PYTHONPATH=python uv run pytest python/tests/unit/
+   ```
+
+2. **Integration Tests** - Tests for component interactions and external service integrations:
+   ```bash
+   PYTHONPATH=python uv run pytest python/tests/integration/
+   ```
+
+3. **Benchmark Tests** - Performance measurements using the GHOSTWIRE scoring system:
+   ```bash
+   PYTHONPATH=python uv run pytest python/tests/benchmark/
+   ```
+
+### Test Categories Explained
+
+**Unit Tests** focus on testing individual functions and classes in isolation. They should:
+- Execute quickly (< 1 second each)
+- Not require external services or databases
+- Cover both normal and edge cases
+- Use mocking where appropriate
+
+**Integration Tests** validate interactions between components and external services. They should:
+- Test realistic component interactions
+- Use temporary databases or test instances
+- Complete within reasonable time (< 10 seconds each)
+- Validate API endpoints and service integrations
+
+**Benchmark Tests** measure performance metrics using the GHOSTWIRE scoring system. They should:
+- Produce quantitative performance measurements
+- Calculate GHOSTWIRE scores for latency, stability, memory usage, and quality
+- Support comparative analysis between different configurations
+- Generate structured performance reports
+
+### Running Specific Tests
+
+Run tests with specific markers:
+```bash
+# Run only embedding tests
+PYTHONPATH=python uv run pytest -m embedding python/tests/
+
+# Run only benchmark tests
+PYTHONPATH=python uv run pytest -m benchmark python/tests/
+
+# Run tests in parallel for faster execution
+PYTHONPATH=python uv run pytest -n auto python/tests/
+```
+
+### Test Coverage
+
+Check test coverage:
+```bash
+PYTHONPATH=python uv run pytest --cov=python/ghostwire python/tests/
+```
+
+### Sample Data Seeding
+
+For contributors who want to quickly populate the database with sample data for testing and exploration:
+
+```bash
+# Seed the database with sample data
+python scripts/seed_sample_data.py
+
+# Seed with verbose output
+python scripts/seed_sample_data.py --verbose
+
+# Force re-seeding even if data already exists
+python scripts/seed_sample_data.py --force
+```
+
+This script will:
+- Create tables if they don't exist
+- Insert sample sessions, messages, and synthetic embeddings
+- Generate realistic sample data that mimics actual usage
+- Populate the database with 15 sample memory entries across 5 sessions
+
+The seeder is idempotent by default to prevent duplicate entries.
 
 ## Dependencies
 
